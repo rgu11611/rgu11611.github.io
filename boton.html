@@ -1,0 +1,84 @@
+@@ -0,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Botón Mágico</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+      position: relative;
+    }
+
+    #boton {
+      position: absolute;
+      padding: 15px 30px;
+      font-size: 18px;
+      cursor: pointer;
+      background-color: #008CBA;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    #boton.dale {
+      background-color: #ff6347;
+    }
+
+  </style>
+</head>
+<body>
+  <button id="boton">JavaScript</button>
+
+  <script>
+    let clickCount = 0;
+
+    const boton = document.getElementById("boton");
+
+    // Función para mover el botón a una posición aleatoria
+    function moverBoton() {
+      const maxX = window.innerWidth - boton.offsetWidth;
+      const maxY = window.innerHeight - boton.offsetHeight;
+      const randomX = Math.random() * maxX;
+      const randomY = Math.random() * maxY;
+      
+      boton.style.left = `${randomX}px`;
+      boton.style.top = `${randomY}px`;
+    }
+
+    // Función para cambiar el texto del botón según el número de clics
+    function cambiarTexto() {
+      clickCount++;
+      if (clickCount === 1) {
+        boton.innerText = "JavaScript";
+        moverBoton();
+      } else if (clickCount === 2) {
+        boton.innerText = "¡Te pillé! Ja ja ja";
+        moverBoton();
+      } else if (clickCount === 3) {
+        boton.innerText = "Dale ahora, me dejo de bromas";
+        boton.classList.add("dale");
+        moverBoton();
+      } else if (clickCount === 4) {
+        window.location.href = "https://www.ejemplo.com"; // Redirige a otra página
+      }
+    }
+
+    boton.addEventListener("click", cambiarTexto);
+
+    // Inicializa el botón en el centro de la pantalla
+    window.onload = () => {
+      boton.style.left = `${(window.innerWidth - boton.offsetWidth) / 2}px`;
+      boton.style.top = `${(window.innerHeight - boton.offsetHeight) / 2}px`;
+    };
+  </script>
+</body>
+</html>
