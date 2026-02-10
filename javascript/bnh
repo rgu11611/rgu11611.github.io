@@ -1,1 +1,38 @@
 
+<html>
+<head>
+<title> Resta </title>
+
+<style>
+h1 {color: red;}
+</style>
+</head>
+<body>
+<script>
+//Defino variables
+let minuendo;
+let sustraendo;
+let resta;
+
+//Pido valores al usuario
+
+minuendo=prompt(" Dame un minuendo cualquiera");
+sustraendo=prompt(" Dame el sustraendo");
+
+//Convierto en Floats
+minuendo=parseFloat(minuendo);
+sustraendo=parseFloat(sustraendo);
+
+//Hago las operaciones que me de la gana
+resta=minuendo - sustraendo;
+
+alert("El resultado de la resta es: " + resta + "Espero que hayas aprendido" + "el minuendo es:   " + minuendo);
+
+document.write("<h1>El resultado de la resta es: " + resta + "</h1>");
+
+
+</script>
+
+<body>
+
+</html>
