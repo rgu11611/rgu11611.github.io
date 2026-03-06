@@ -2,19 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Mini FPS tipo CSGO</title>
+<title>Mini CSGO Training</title>
 
 <style>
-body{
-margin:0;
-overflow:hidden;
-background:black;
-font-family:Arial;
-}
-
-canvas{
-display:block;
-}
+body{margin:0;overflow:hidden;background:black;font-family:Arial}
+canvas{display:block}
 
 #hud{
 position:fixed;
@@ -22,38 +14,29 @@ top:10px;
 left:10px;
 color:white;
 font-size:18px;
-z-index:2;
+z-index:2
 }
 
 #crosshair{
 position:fixed;
 top:50%;
 left:50%;
-width:20px;
-height:20px;
-margin-left:-10px;
-margin-top:-10px;
+width:18px;
+height:18px;
+margin-left:-9px;
+margin-top:-9px;
 pointer-events:none;
-z-index:2;
+z-index:3
 }
 
-#crosshair::before,#crosshair::after{
+#crosshair:before,#crosshair:after{
 content:"";
 position:absolute;
-background:white;
+background:white
 }
 
-#crosshair::before{
-width:2px;
-height:20px;
-left:9px;
-}
-
-#crosshair::after{
-height:2px;
-width:20px;
-top:9px;
-}
+#crosshair:before{width:2px;height:18px;left:8px}
+#crosshair:after{height:2px;width:18px;top:8px}
 
 #start{
 position:fixed;
@@ -61,7 +44,8 @@ top:50%;
 left:50%;
 transform:translate(-50%,-50%);
 color:white;
-font-size:28px;
+font-size:30px;
+z-index:4
 }
 </style>
 </head>
@@ -69,34 +53,36 @@ font-size:28px;
 <body>
 
 <div id="hud">
-Puntos: <span id="score">0</span> |
-Vida: <span id="hp">100</span>
+Puntos: <span id="score">0</span>
 </div>
 
 <div id="crosshair"></div>
-<div id="start">Haz click para jugar</div>
+<div id="start">Click para jugar</div>
+
 <canvas id="game"></canvas>
 
 <script>
 
-const canvas = document.getElementById("game")
-const ctx = canvas.getContext("2d")
+const canvas=document.getElementById("game")
+const ctx=canvas.getContext("2d")
 
-canvas.width = innerWidth
-canvas.height = innerHeight
+canvas.width=innerWidth
+canvas.height=innerHeight
 
-const scoreEl = document.getElementById("score")
-const hpEl = document.getElementById("hp")
-const start = document.getElementById("start")
+const scoreEl=document.getElementById("score")
+const start=document.getElementById("start")
 
-let score = 0
-let hp = 100
+let score=0
+
+let recoil=0
 
 const player={
 x:0,
-y:0,
-angle:0,
-speed:0.12
+y:1.6,
+z:0,
+yaw:0,
+pitch:0,
+speed:0.15
 }
 
 let keys={}
@@ -110,87 +96,128 @@ start.style.display="none"
 }
 
 document.addEventListener("mousemove",e=>{
+
 if(document.pointerLockElement===canvas){
-player.angle += e.movementX*0.002
+
+player.yaw += e.movementX*0.002
+player.pitch -= e.movementY*0.002
+
+player.pitch-=recoil
+
+recoil*=0.9
+
+if(player.pitch>1.3) player.pitch=1.3
+if(player.pitch<-1.3) player.pitch=-1.3
+
 }
+
 })
 
-class Enemy{
+class Target{
 
 constructor(){
-this.respawn()
+this.reset()
 }
 
-respawn(){
-this.x=(Math.random()-0.5)*20
-this.y=(Math.random()-0.5)*20
-this.vx=(Math.random()-0.5)*0.02
-this.vy=(Math.random()-0.5)*0.02
+reset(){
+this.x=(Math.random()-0.5)*10
+this.y=Math.random()*4+1
+this.vx=(Math.random()-0.5)*0.05
 }
 
 update(){
 
 this.x+=this.vx
-this.y+=this.vy
 
-let dx=this.x-player.x
-let dy=this.y-player.y
-
-let dist=Math.sqrt(dx*dx+dy*dy)
-
-if(dist<1.5){
-hp-=0.1
-hpEl.textContent=Math.floor(hp)
-}
+if(this.x>5||this.x<-5) this.vx*=-1
 
 }
 
 draw(){
 
+let wallZ=20
+
 let dx=this.x-player.x
 let dy=this.y-player.y
+let dz=wallZ-player.z
 
-let angle=Math.atan2(dy,dx)-player.angle
+let cosY=Math.cos(player.yaw)
+let sinY=Math.sin(player.yaw)
 
-let dist=Math.sqrt(dx*dx+dy*dy)
+let x=dx*cosY - dz*sinY
+let z=dz*cosY + dx*sinY
 
-let size=500/dist
+let cosP=Math.cos(player.pitch)
+let sinP=Math.sin(player.pitch)
 
-let sx=canvas.width/2 + Math.tan(angle)*600
+let y=dy*cosP - z*sinP
+z=z*cosP + dy*sinP
 
-let sy=canvas.height/2
+if(z<=0) return
 
-ctx.fillStyle="red"
+let scale=500/z
+
+let sx=canvas.width/2 + x*scale
+let sy=canvas.height/2 - y*scale
+
+this.sx=sx
+this.sy=sy
+this.size=25*scale/100
+
 ctx.beginPath()
-ctx.arc(sx,sy,size,0,Math.PI*2)
+ctx.arc(sx,sy,this.size,0,Math.PI*2)
+ctx.fillStyle="red"
 ctx.fill()
 
-this.screenX=sx
-this.screenY=sy
-this.size=size
-
 }
 
 }
 
-let enemies=[]
-for(let i=0;i<8;i++) enemies.push(new Enemy())
+let targets=[]
+for(let i=0;i<8;i++) targets.push(new Target())
+
+function playShoot(){
+
+let a=new AudioContext()
+let o=a.createOscillator()
+let g=a.createGain()
+
+o.connect(g)
+g.connect(a.destination)
+
+o.type="square"
+o.frequency.value=180
+
+g.gain.value=0.2
+
+o.start()
+
+setTimeout(()=>{
+o.stop()
+a.close()
+},60)
+
+}
 
 function shoot(){
+
+playShoot()
+
+recoil+=0.02
 
 let cx=canvas.width/2
 let cy=canvas.height/2
 
-enemies.forEach(e=>{
+targets.forEach(t=>{
 
-let dx=e.screenX-cx
-let dy=e.screenY-cy
+let dx=t.sx-cx
+let dy=t.sy-cy
 
-if(Math.sqrt(dx*dx+dy*dy)<e.size){
+if(Math.sqrt(dx*dx+dy*dy)<t.size){
 
 score++
 scoreEl.textContent=score
-e.respawn()
+t.reset()
 
 }
 
@@ -203,34 +230,62 @@ document.addEventListener("click",shoot)
 function move(){
 
 if(keys["w"]){
-player.x+=Math.cos(player.angle)*player.speed
-player.y+=Math.sin(player.angle)*player.speed
+player.x+=Math.sin(player.yaw)*player.speed
+player.z+=Math.cos(player.yaw)*player.speed
 }
 
 if(keys["s"]){
-player.x-=Math.cos(player.angle)*player.speed
-player.y-=Math.sin(player.angle)*player.speed
+player.x-=Math.sin(player.yaw)*player.speed
+player.z-=Math.cos(player.yaw)*player.speed
 }
 
 if(keys["a"]){
-player.x+=Math.cos(player.angle-Math.PI/2)*player.speed
-player.y+=Math.sin(player.angle-Math.PI/2)*player.speed
+player.x-=Math.cos(player.yaw)*player.speed
+player.z+=Math.sin(player.yaw)*player.speed
 }
 
 if(keys["d"]){
-player.x+=Math.cos(player.angle+Math.PI/2)*player.speed
-player.y+=Math.sin(player.angle+Math.PI/2)*player.speed
+player.x+=Math.cos(player.yaw)*player.speed
+player.z-=Math.sin(player.yaw)*player.speed
 }
 
 }
 
 function drawWorld(){
 
-ctx.fillStyle="#222"
+ctx.fillStyle="#1a1a1a"
 ctx.fillRect(0,0,canvas.width,canvas.height/2)
 
-ctx.fillStyle="#111"
+ctx.fillStyle="#0f0f0f"
 ctx.fillRect(0,canvas.height/2,canvas.width,canvas.height)
+
+ctx.fillStyle="#444"
+
+let wallWidth=800
+let wallHeight=400
+
+ctx.fillRect(
+canvas.width/2-wallWidth/2,
+canvas.height/2-wallHeight/2,
+wallWidth,
+wallHeight
+)
+
+}
+
+function drawGun(){
+
+let w=200
+let h=120
+
+let x=canvas.width/2-w/2
+let y=canvas.height-h+20
+
+ctx.fillStyle="#333"
+ctx.fillRect(x,y,w,h)
+
+ctx.fillStyle="#222"
+ctx.fillRect(x+80,y-40,40,40)
 
 }
 
@@ -240,15 +295,12 @@ move()
 
 drawWorld()
 
-enemies.forEach(e=>{
-e.update()
-e.draw()
+targets.forEach(t=>{
+t.update()
+t.draw()
 })
 
-if(hp<=0){
-alert("Game Over\nPuntos: "+score)
-location.reload()
-}
+drawGun()
 
 requestAnimationFrame(loop)
 
@@ -257,6 +309,5 @@ requestAnimationFrame(loop)
 loop()
 
 </script>
-
 </body>
 </html>
