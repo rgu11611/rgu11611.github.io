@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>CSGO Aim Trainer</title>
+<title>Aim Trainer</title>
 
 <style>
 body{margin:0;overflow:hidden;background:black;font-family:Arial}
@@ -69,9 +69,10 @@ const start=document.getElementById("start")
 let score=0
 
 const wall={
-z:10,
+z:9,
 width:6,
-height:4
+height:3,
+y:2
 }
 
 const player={
@@ -83,8 +84,8 @@ pitch:0,
 speed:0.15
 }
 
-let recoil=0
 let keys={}
+let recoil=0
 
 document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true)
 document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false)
@@ -95,16 +96,14 @@ start.style.display="none"
 }
 
 document.addEventListener("mousemove",e=>{
-
 if(document.pointerLockElement===canvas){
 
-player.yaw += e.movementX*0.002
-player.pitch -= e.movementY*0.002
+player.yaw+=e.movementX*0.002
+player.pitch-=e.movementY*0.002
 
 player.pitch=Math.max(-1.2,Math.min(1.2,player.pitch))
 
 }
-
 })
 
 class Target{
@@ -115,8 +114,10 @@ this.reset()
 
 reset(){
 
-this.x=(Math.random()-0.5)*wall.width
-this.y=Math.random()*wall.height
+const margin=0.5
+
+this.x=(Math.random()*(wall.width-margin*2)-wall.width/2+margin)
+this.y=wall.y+(Math.random()*(wall.height-margin*2)+margin)
 
 this.vx=(Math.random()-0.5)*0.03
 this.vy=(Math.random()-0.5)*0.02
@@ -128,8 +129,10 @@ update(){
 this.x+=this.vx
 this.y+=this.vy
 
-if(this.x>wall.width/2||this.x<-wall.width/2) this.vx*=-1
-if(this.y>wall.height||this.y<0) this.vy*=-1
+const margin=0.5
+
+if(this.x>wall.width/2-margin||this.x<-wall.width/2+margin) this.vx*=-1
+if(this.y>wall.y+wall.height-margin||this.y<wall.y+margin) this.vy*=-1
 
 }
 
@@ -158,7 +161,7 @@ let scale=600/z
 let sx=canvas.width/2 + x*scale
 let sy=canvas.height/2 - y*scale
 
-let r=28*scale/100
+let r=25*scale/100
 
 this.sx=sx
 this.sy=sy
@@ -191,8 +194,8 @@ for(let i=0;i<8;i++)targets.push(new Target())
 
 function shoot(){
 
-recoil+=0.04
-player.pitch+=recoil*0.5
+recoil+=0.05
+player.pitch+=recoil*0.4
 
 let cx=canvas.width/2
 let cy=canvas.height/2
@@ -240,53 +243,75 @@ player.z-=Math.sin(player.yaw)*player.speed
 
 }
 
-function drawWall(){
+function project(x,y,z){
 
-let dx=-player.x
-let dy=-player.y
-let dz=wall.z-player.z
+let dx=x-player.x
+let dy=y-player.y
+let dz=z-player.z
 
 let cosY=Math.cos(player.yaw)
 let sinY=Math.sin(player.yaw)
 
-let x=dx*cosY - dz*sinY
-let z=dz*cosY + dx*sinY
+let px=dx*cosY - dz*sinY
+let pz=dz*cosY + dx*sinY
 
 let cosP=Math.cos(player.pitch)
 let sinP=Math.sin(player.pitch)
 
-let y=dy*cosP - z*sinP
-z=z*cosP + dy*sinP
+let py=dy*cosP - pz*sinP
+pz=pz*cosP + dy*sinP
 
-if(z<=0)return
+if(pz<=0) return null
 
-let scale=600/z
+let scale=600/pz
 
-let sx=canvas.width/2 + x*scale
-let sy=canvas.height/2 - y*scale
+return{
+x:canvas.width/2 + px*scale,
+y:canvas.height/2 - py*scale,
+scale:scale
+}
 
-let w=wall.width*scale
-let h=wall.height*scale
+}
 
-ctx.fillStyle="#444"
+function drawWall(){
 
-let r=30
+let p=project(0,wall.y+wall.height/2,wall.z)
+if(!p)return
+
+let w=wall.width*p.scale
+let h=wall.height*p.scale
+
+ctx.fillStyle="#555"
+
+let r=25
 
 ctx.beginPath()
-ctx.moveTo(sx-w/2+r,sy-h/2)
+ctx.moveTo(p.x-w/2+r,p.y-h/2)
+ctx.lineTo(p.x+w/2-r,p.y-h/2)
+ctx.quadraticCurveTo(p.x+w/2,p.y-h/2,p.x+w/2,p.y-h/2+r)
 
-ctx.lineTo(sx+w/2-r,sy-h/2)
-ctx.quadraticCurveTo(sx+w/2,sy-h/2,sx+w/2,sy-h/2+r)
+ctx.lineTo(p.x+w/2,p.y+h/2-r)
+ctx.quadraticCurveTo(p.x+w/2,p.y+h/2,p.x+w/2-r,p.y+h/2)
 
-ctx.lineTo(sx+w/2,sy+h/2-r)
-ctx.quadraticCurveTo(sx+w/2,sy+h/2,sx+w/2-r,sy+h/2)
+ctx.lineTo(p.x-w/2+r,p.y+h/2)
+ctx.quadraticCurveTo(p.x-w/2,p.y+h/2,p.x-w/2,p.y+h/2-r)
 
-ctx.lineTo(sx-w/2+r,sy+h/2)
-ctx.quadraticCurveTo(sx-w/2,sy+h/2,sx-w/2,sy+h/2-r)
+ctx.lineTo(p.x-w/2,p.y-h/2+r)
+ctx.quadraticCurveTo(p.x-w/2,p.y-h/2,p.x-w/2+r,p.y-h/2)
 
-ctx.lineTo(sx-w/2,sy-h/2+r)
-ctx.quadraticCurveTo(sx-w/2,sy-h/2,sx-w/2+r,sy-h/2)
+ctx.fill()
 
+}
+
+function drawFloor(){
+
+ctx.fillStyle="#222"
+
+ctx.beginPath()
+ctx.moveTo(0,canvas.height)
+ctx.lineTo(canvas.width,canvas.height)
+ctx.lineTo(canvas.width,canvas.height*0.65)
+ctx.lineTo(0,canvas.height*0.65)
 ctx.fill()
 
 }
@@ -294,16 +319,19 @@ ctx.fill()
 function drawDeagle(){
 
 let baseX=canvas.width/2
-let baseY=canvas.height-80
+let baseY=canvas.height-70
 
 ctx.fillStyle="#2a2a2a"
-ctx.fillRect(baseX-40,baseY-20,80,25)
+ctx.fillRect(baseX-45,baseY-15,90,25)
 
-ctx.fillStyle="#444"
-ctx.fillRect(baseX-20,baseY-60,40,40)
+ctx.fillStyle="#3a3a3a"
+ctx.fillRect(baseX-25,baseY-65,50,40)
 
 ctx.fillStyle="#555"
-ctx.fillRect(baseX-10,baseY-90,20,30)
+ctx.fillRect(baseX-12,baseY-100,24,35)
+
+ctx.fillStyle="#1a1a1a"
+ctx.fillRect(baseX-18,baseY-40,36,45)
 
 }
 
@@ -311,6 +339,8 @@ function loop(){
 
 ctx.fillStyle="#111"
 ctx.fillRect(0,0,canvas.width,canvas.height)
+
+drawFloor()
 
 move()
 
