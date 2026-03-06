@@ -3,27 +3,90 @@
 <head>
 <meta charset="UTF-8">
 <title>Aim Trainer Avanzado</title>
+
 <style>
-body{margin:0;overflow:hidden;background:black;font-family:Arial}
-canvas{display:block}
-#hud{position:fixed;top:10px;left:10px;color:white;font-size:18px;}
-#crosshair{position:fixed;top:50%;left:50%;width:18px;height:18px;margin-left:-9px;margin-top:-9px;pointer-events:none;}
-#crosshair:before,#crosshair:after{content:"";position:absolute;background:white;}
-#crosshair:before{width:2px;height:18px;left:8px}
-#crosshair:after{height:2px;width:18px;top:8px}
-#menu{
-position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-color:white;background:rgba(0,0,0,0.8);padding:20px;border-radius:10px;display:none;
+
+:root{
+--cross:white;
 }
-label{display:block;margin:5px 0;}
+
+body{
+margin:0;
+overflow:hidden;
+background:black;
+font-family:Arial
+}
+
+canvas{
+display:block
+}
+
+#hud{
+position:fixed;
+top:10px;
+left:10px;
+color:white;
+font-size:18px;
+}
+
+#crosshair{
+position:fixed;
+top:50%;
+left:50%;
+width:18px;
+height:18px;
+margin-left:-9px;
+margin-top:-9px;
+pointer-events:none;
+}
+
+#crosshair:before,#crosshair:after{
+content:"";
+position:absolute;
+background:var(--cross);
+}
+
+#crosshair:before{
+width:2px;
+height:18px;
+left:8px
+}
+
+#crosshair:after{
+height:2px;
+width:18px;
+top:8px
+}
+
+#menu{
+position:fixed;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+color:white;
+background:rgba(0,0,0,0.8);
+padding:20px;
+border-radius:10px;
+display:none;
+}
+
+label{
+display:block;
+margin:5px 0;
+}
+
 </style>
 </head>
 <body>
 
 <div id="hud">Puntos: <span id="score">0</span></div>
+
 <div id="crosshair"></div>
+
 <div id="menu">
+
 <h3>Configuración</h3>
+
 <label>Mira:
 <select id="crossSelect">
 <option value="white">Blanca</option>
@@ -32,16 +95,22 @@ label{display:block;margin:5px 0;}
 <option value="yellow">Amarilla</option>
 </select>
 </label>
+
 <label>Sensibilidad:
 <input type="range" id="sens" min="0.1" max="2" step="0.01" value="0.002"/>
 </label>
+
 <p>Pulsa Tab para salir</p>
+
 </div>
+
 <canvas id="game"></canvas>
 
 <script>
+
 const canvas=document.getElementById("game")
 const ctx=canvas.getContext("2d")
+
 canvas.width=innerWidth
 canvas.height=innerHeight
 
@@ -52,139 +121,304 @@ const crossSelect=document.getElementById("crossSelect")
 const sensInput=document.getElementById("sens")
 
 let score=0
-let player={yaw:0,pitch:0,sens:0.002}
+
+let player={
+yaw:0,
+pitch:0,
+sens:0.002
+}
+
 let recoil=0
+
 let targets=[]
 let particles=[]
 
-const wall={z:8,width:6,height:3,y:2}
+const wall={
+z:8,
+width:6,
+height:3,
+y:2
+}
 
-// Gestión menú
 let menuOpen=false
-document.addEventListener("keydown",e=>{
-if(e.key==="Tab"){e.preventDefault();menuOpen=!menuOpen;menu.style.display=menuOpen?"block":"none";}
-})
-sensInput.addEventListener("input",()=>player.sens=parseFloat(sensInput.value))
-crossSelect.addEventListener("change",()=>crosshair.style.background=crossSelect.value)
 
-// Pointer lock
-canvas.onclick=()=>canvas.requestPointerLock()
+document.addEventListener("keydown",e=>{
+if(e.key==="Tab"){
+e.preventDefault()
+menuOpen=!menuOpen
+menu.style.display=menuOpen?"block":"none"
+}
+})
+
+sensInput.addEventListener("input",()=>{
+player.sens=parseFloat(sensInput.value)
+})
+
+crossSelect.addEventListener("change",()=>{
+document.documentElement.style.setProperty("--cross",crossSelect.value)
+})
+
+canvas.onclick=()=>{
+if(!menuOpen){
+canvas.requestPointerLock()
+}
+}
+
 document.addEventListener("mousemove",e=>{
+
 if(document.pointerLockElement===canvas && !menuOpen){
+
 player.yaw+=e.movementX*player.sens
 player.pitch-=e.movementY*player.sens
+
 player.pitch=Math.max(-1.2,Math.min(1.2,player.pitch))
+
 }
+
 })
 
-// Targets
+document.addEventListener("mousedown",shoot)
+
 class Target{
-constructor(){this.reset()}
+
+constructor(){
+this.reset()
+}
+
 reset(){
+
 const margin=0.4
+
 this.x=(Math.random()*(wall.width-margin*2)-wall.width/2+margin)
+
 this.y=wall.y+(Math.random()*(wall.height-margin*2)+margin)
+
 this.vx=(Math.random()-0.5)*0.03
 this.vy=(Math.random()-0.5)*0.02
+
 }
+
 update(){
-this.x+=this.vx; this.y+=this.vy
+
+this.x+=this.vx
+this.y+=this.vy
+
 const m=0.4
+
 if(this.x>wall.width/2-m||this.x<-wall.width/2+m) this.vx*=-1
 if(this.y>wall.y+wall.height-m||this.y<wall.y+m) this.vy*=-1
+
 }
+
 draw(){
+
 let p=project(this.x,this.y,wall.z)
 if(!p) return
+
 let r=25*p.scale/100
-this.sx=p.x; this.sy=p.y; this.size=r
+
+this.sx=p.x
+this.sy=p.y
+this.size=r
+
 let grad=ctx.createRadialGradient(p.x-r*0.4,p.y-r*0.4,r*0.2,p.x,p.y,r)
+
 grad.addColorStop(0,"#ffcccc")
 grad.addColorStop(1,"#aa0000")
+
 ctx.fillStyle=grad
+
 ctx.beginPath()
-ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.fill()
-}
+ctx.arc(p.x,p.y,r,0,Math.PI*2)
+ctx.fill()
+
 }
 
-// Partículas impacto
+}
+
 class Particle{
+
 constructor(x,y,color){
-this.x=x; this.y=y
-this.vx=(Math.random()-0.5)*2
-this.vy=(Math.random()-0.5)*2
+
+this.x=x
+this.y=y
+
+this.vx=(Math.random()-0.5)*4
+this.vy=(Math.random()-0.5)*4
+
 this.life=30
 this.color=color
-}
-update(){this.x+=this.vx; this.y+=this.vy; this.life--}
-draw(){ctx.fillStyle=this.color; ctx.beginPath(); ctx.arc(this.x,this.y,2,0,Math.PI*2); ctx.fill()}
+
 }
 
-for(let i=0;i<8;i++)targets.push(new Target())
+update(){
+
+this.x+=this.vx
+this.y+=this.vy
+
+this.life--
+
+}
+
+draw(){
+
+ctx.fillStyle=this.color
+
+ctx.beginPath()
+ctx.arc(this.x,this.y,2,0,Math.PI*2)
+ctx.fill()
+
+}
+
+}
+
+for(let i=0;i<8;i++){
+targets.push(new Target())
+}
 
 function project(x,y,z){
-let dx=x, dy=y-1.6, dz=z
-let cosY=Math.cos(player.yaw), sinY=Math.sin(player.yaw)
+
+let dx=x
+let dy=y-1.6
+let dz=z
+
+let cosY=Math.cos(player.yaw)
+let sinY=Math.sin(player.yaw)
+
 let px=dx*cosY - dz*sinY
 let pz=dz*cosY + dx*sinY
-let cosP=Math.cos(player.pitch), sinP=Math.sin(player.pitch)
+
+let cosP=Math.cos(player.pitch)
+let sinP=Math.sin(player.pitch)
+
 let py=dy*cosP - pz*sinP
 pz=pz*cosP + dy*sinP
+
 if(pz<=0) return null
+
 let scale=600/pz
-return {x:canvas.width/2+px*scale,y:canvas.height/2-py*scale,scale}
+
+return{
+x:canvas.width/2+px*scale,
+y:canvas.height/2-py*scale,
+scale
+}
+
 }
 
 function shoot(){
-recoil+=0.05; player.pitch+=recoil*0.4
-let cx=canvas.width/2, cy=canvas.height/2
+
+if(menuOpen) return
+
+recoil+=0.05
+player.pitch+=recoil*0.2
+
+let cx=canvas.width/2
+let cy=canvas.height/2
+
 targets.forEach(t=>{
-let dx=t.sx-cx, dy=t.sy-cy
+
+let dx=t.sx-cx
+let dy=t.sy-cy
+
 if(Math.sqrt(dx*dx+dy*dy)<t.size){
-score++; scoreEl.textContent=score; t.reset()
-for(let i=0;i<15;i++)particles.push(new Particle(t.sx,t.sy,crossSelect.value))
-}
-})
+
+score++
+scoreEl.textContent=score
+
+t.reset()
+
+for(let i=0;i<15;i++){
+particles.push(new Particle(t.sx,t.sy,getComputedStyle(document.documentElement).getPropertyValue("--cross")))
 }
 
-// Dibujar muro estático
+}
+
+})
+
+}
+
 function drawWall(){
+
 ctx.fillStyle="#555"
+
 let scale=canvas.height/400
-let w=wall.width*scale, h=wall.height*scale
-let px=canvas.width/2, py=canvas.height/2-wall.y*50
+
+let w=wall.width*scale
+let h=wall.height*scale
+
+let px=canvas.width/2
+let py=canvas.height/2-wall.y*50
+
 let r=25
+
 ctx.beginPath()
+
 ctx.moveTo(px-w/2+r,py-h/2)
 ctx.lineTo(px+w/2-r,py-h/2)
 ctx.quadraticCurveTo(px+w/2,py-h/2,px+w/2,py-h/2+r)
+
 ctx.lineTo(px+w/2,py+h/2-r)
 ctx.quadraticCurveTo(px+w/2,py+h/2,px+w/2-r,py+h/2)
+
 ctx.lineTo(px-w/2+r,py+h/2)
 ctx.quadraticCurveTo(px-w/2,py+h/2,px-w/2,py+h/2-r)
+
 ctx.lineTo(px-w/2,py-h/2+r)
 ctx.quadraticCurveTo(px-w/2,py-h/2,px-w/2+r,py-h/2)
+
 ctx.fill()
+
 }
 
-// Dibujar suelo estático debajo del personaje
 function drawFloor(){
-ctx.strokeStyle="#333"; ctx.lineWidth=2
-for(let z=1; z<20; z+=0.5){
+
+ctx.strokeStyle="#333"
+ctx.lineWidth=2
+
+for(let z=1;z<20;z+=0.5){
+
 let y=canvas.height/2+150+z*20
-ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke()
+
+ctx.beginPath()
+ctx.moveTo(0,y)
+ctx.lineTo(canvas.width,y)
+ctx.stroke()
+
 }
+
 }
 
 function loop(){
-ctx.fillStyle="#111"; ctx.fillRect(0,0,canvas.width,canvas.height)
+
+ctx.fillStyle="#111"
+ctx.fillRect(0,0,canvas.width,canvas.height)
+
 drawFloor()
 drawWall()
-targets.forEach(t=>{t.update(); t.draw()})
-particles.forEach((p,i)=>{p.update(); p.draw(); if(p.life<=0) particles.splice(i,1)})
-requestAnimationFrame(loop)
+
+targets.forEach(t=>{
+t.update()
+t.draw()
+})
+
+particles.forEach((p,i)=>{
+
+p.update()
+p.draw()
+
+if(p.life<=0){
+particles.splice(i,1)
 }
+
+})
+
+requestAnimationFrame(loop)
+
+}
+
 loop()
+
 </script>
 </body>
 </html>
