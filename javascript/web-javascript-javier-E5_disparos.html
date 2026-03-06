@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Aim Trainer 3D</title>
+<title>Aim Trainer 3D Mejorado</title>
 <style>
 body{margin:0;overflow:hidden;background:black;font-family:Arial;}
 #score{position:fixed;top:15px;left:15px;color:white;font-size:22px;z-index:10;}
@@ -24,7 +24,6 @@ const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Handle window resize
 window.addEventListener('resize',()=> {
     camera.aspect = window.innerWidth/window.innerHeight;
     camera.updateProjectionMatrix();
@@ -33,9 +32,9 @@ window.addEventListener('resize',()=> {
 
 // === Lighting ===
 scene.add(new THREE.AmbientLight(0x555555));
-const light = new THREE.PointLight(0xffffff,1.5);
-light.position.set(0,8,0);
-scene.add(light);
+const pointLight = new THREE.PointLight(0xffffff,1.5);
+pointLight.position.set(0,8,0);
+scene.add(pointLight);
 
 // === Room ===
 function createWall(w,h,d,x,y,z){
@@ -57,7 +56,7 @@ createWall(0.5,6,roomSize,roomSize/2,3,0); // right
 const targets = [];
 function spawnTarget(){
     const geo = new THREE.SphereGeometry(0.4,32,32);
-    const mat = new THREE.MeshStandardMaterial({color:0xff3333,emissive:0x550000});
+    const mat = new THREE.MeshStandardMaterial({color:0xff3333,emissive:0xff2222,emissiveIntensity:0.6});
     const t = new THREE.Mesh(geo,mat);
     t.position.x = (Math.random()*10)-5;
     t.position.y = 1 + Math.random()*4;
@@ -68,6 +67,38 @@ function spawnTarget(){
     targets.push(t);
 }
 for(let i=0;i<12;i++) spawnTarget();
+
+// === Particles ===
+const particles = [];
+function spawnParticles(pos){
+    for(let i=0;i<10;i++){
+        const geo = new THREE.CircleGeometry(0.05,12);
+        const mat = new THREE.MeshBasicMaterial({color:0xffaa00});
+        const p = new THREE.Mesh(geo,mat);
+        p.position.copy(pos);
+        p.userData = {
+            vx:(Math.random()-0.5)*0.2,
+            vy:(Math.random()-0.5)*0.2,
+            vz:(Math.random()-0.5)*0.2,
+            life:30
+        };
+        scene.add(p);
+        particles.push(p);
+    }
+}
+function updateParticles(){
+    for(let i=particles.length-1;i>=0;i--){
+        const p = particles[i];
+        p.position.x += p.userData.vx;
+        p.position.y += p.userData.vy;
+        p.position.z += p.userData.vz;
+        p.userData.life--;
+        if(p.userData.life<=0){
+            scene.remove(p);
+            particles.splice(i,1);
+        }
+    }
+}
 
 // === Raycaster & Mouse ===
 const raycaster = new THREE.Raycaster();
@@ -103,13 +134,20 @@ document.addEventListener("mousedown",()=>{
     const hits = raycaster.intersectObjects(targets);
     if(hits.length>0){
         const t = hits[0].object;
-        score++; 
+        // Increment score
+        score++;
         scoreEl.textContent="Score: "+score;
+        // Retroceso cámara
+        camera.position.z += 0.2;
+        setTimeout(()=>camera.position.z -= 0.2,50);
+        // Partículas
+        spawnParticles(t.position);
+        // Reset target
         t.position.x = (Math.random()*10)-5;
         t.position.y = 1 + Math.random()*4;
-        // efecto simple: parpadeo del target
+        // Brillo breve
         t.material.emissive.setHex(0xffffff);
-        setTimeout(()=>t.material.emissive.setHex(0x550000),100);
+        setTimeout(()=>t.material.emissive.setHex(0xff2222),100);
     }
 });
 
@@ -117,6 +155,7 @@ document.addEventListener("mousedown",()=>{
 function animate(){
     requestAnimationFrame(animate);
     updateTargets();
+    updateParticles();
     renderer.render(scene,camera);
 }
 animate();
