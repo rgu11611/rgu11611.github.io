@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Mini Shooter 3D</title>
+<title>Mini Doom con Enemigos</title>
 <style>
 body{margin:0;overflow:hidden;background:#111;}
 canvas{display:block;}
@@ -25,25 +25,62 @@ canvas.width=window.innerWidth;
 canvas.height=window.innerHeight;
 window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
 
-// ===== Mapa 0=vacío,1=pared,2=enemigo =====
+// ===== Mapa y enemigos =====
 const map=[
 [1,1,1,1,1,1,1,1,1,1],
 [1,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,2,0,0,0,0,1],
-[1,0,0,1,0,0,2,0,0,1],
 [1,0,0,0,0,0,0,0,0,1],
-[1,0,2,0,0,0,0,0,0,1],
-[1,0,0,0,2,0,0,0,0,1],
+[1,0,0,0,0,0,0,0,0,1],
+[1,0,0,0,0,0,0,0,0,1],
+[1,0,0,0,0,0,0,0,0,1],
+[1,0,0,0,0,0,0,0,0,1],
 [1,0,0,0,0,0,0,0,0,1],
 [1,1,1,1,1,1,1,1,1,1]
 ];
 const tileSize=64;
 
 // ===== Player =====
-let player={x:2*tileSize,y:2*tileSize,angle:0,speed:0};
+let player={x:2*tileSize,y:2*tileSize,angle:0,speed:0,health:100};
 let keys={};
 let score=0;
 const scoreEl=document.getElementById('score');
+
+// ===== Enemigos =====
+class Enemy{
+    constructor(x,y){
+        this.x=x; this.y=y; this.alive=true;
+    }
+    update(){
+        if(!this.alive) return;
+        const dx=player.x-this.x;
+        const dy=player.y-this.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist>20){
+            this.x+=dx/dist*0.5;
+            this.y+=dy/dist*0.5;
+        }
+        // Puede atacar si quieres añadir salud del player
+    }
+    draw(ctx,player){
+        if(!this.alive) return;
+        // Proyección simple 3D
+        const dx=this.x-player.x;
+        const dy=this.y-player.y;
+        const angleToEnemy=Math.atan2(dy,dx)-player.angle;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(Math.abs(angleToEnemy)<Math.PI/6 && dist>0.1){
+            const h=(tileSize*canvas.height)/dist;
+            const screenX=canvas.width/2+Math.tan(angleToEnemy)*canvas.width/2;
+            ctx.fillStyle='red';
+            ctx.fillRect(screenX-h/2,canvas.height/2-h/2,h,h);
+        }
+    }
+}
+let enemies=[
+    new Enemy(5*tileSize,3*tileSize),
+    new Enemy(7*tileSize,5*tileSize),
+    new Enemy(4*tileSize,6*tileSize)
+];
 
 // ===== Controles =====
 document.addEventListener('keydown',e=>keys[e.key]=true);
@@ -55,18 +92,22 @@ document.addEventListener('mousemove',e=>{if(document.pointerLockElement)player.
 let recoil=0;
 document.addEventListener('mousedown',()=>{
     const rayLength=300;
-    const hitX=player.x+Math.cos(player.angle)*rayLength;
-    const hitY=player.y+Math.sin(player.angle)*rayLength;
-    const mapX=Math.floor(hitX/tileSize);
-    const mapY=Math.floor(hitY/tileSize);
-    if(map[mapY][mapX]===2){
-        map[mapY][mapX]=0;
-        score++; scoreEl.textContent="Score: "+score;
-    }
+    const rayX=player.x+Math.cos(player.angle)*rayLength;
+    const rayY=player.y+Math.sin(player.angle)*rayLength;
+    enemies.forEach(e=>{
+        if(!e.alive) return;
+        const dx=e.x-rayX;
+        const dy=e.y-rayY;
+        if(Math.sqrt(dx*dx+dy*dy)<30){
+            e.alive=false;
+            score++;
+            scoreEl.textContent="Score: "+score;
+        }
+    });
     recoil=5;
 });
 
-// ===== Movimiento =====
+// ===== Movimiento Player =====
 function movePlayer(){
     let speed=0;
     if(keys['w']) speed=2;
@@ -75,12 +116,12 @@ function movePlayer(){
     const ny=player.y+Math.sin(player.angle)*speed;
     const mapX=Math.floor(nx/tileSize);
     const mapY=Math.floor(ny/tileSize);
-    if(map[mapY][mapX]===0) player.x=nx, player.y=ny;
+    if(map[mapY] && map[mapY][mapX]===0) player.x=nx, player.y=ny;
     if(keys['a']) player.angle-=0.03;
     if(keys['d']) player.angle+=0.03;
 }
 
-// ===== Raycasting 3D =====
+// ===== Raycasting paredes =====
 function draw3D(){
     const numRays=canvas.width;
     const fov=Math.PI/3;
@@ -97,7 +138,7 @@ function draw3D(){
             if(map[my] && map[my][mx]>0){hit=true;wallType=map[my][mx];}
         }
         const wallHeight=(tileSize*canvas.height)/distance;
-        ctx.fillStyle=wallType===1?'#666':'#c33'; // gris=pared, rojo=enemigo
+        ctx.fillStyle=wallType===1?'#666':'#c33';
         ctx.fillRect(i,canvas.height/2-wallHeight/2,1,wallHeight);
     }
 }
@@ -118,6 +159,7 @@ function loop(){
     ctx.fillRect(0,0,canvas.width,canvas.height);
     movePlayer();
     draw3D();
+    enemies.forEach(e=>{e.update(); e.draw(ctx,player);});
     drawGun();
     requestAnimationFrame(loop);
 }
