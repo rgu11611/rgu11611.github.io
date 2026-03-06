@@ -100,11 +100,40 @@ if(document.pointerLockElement===canvas){
 
 player.yaw+=e.movementX*0.002
 player.pitch-=e.movementY*0.002
-
 player.pitch=Math.max(-1.2,Math.min(1.2,player.pitch))
 
 }
 })
+
+function project(x,y,z){
+
+let dx=x-player.x
+let dy=y-player.y
+let dz=z-player.z
+
+let cosY=Math.cos(player.yaw)
+let sinY=Math.sin(player.yaw)
+
+let px=dx*cosY - dz*sinY
+let pz=dz*cosY + dx*sinY
+
+let cosP=Math.cos(player.pitch)
+let sinP=Math.sin(player.pitch)
+
+let py=dy*cosP - pz*sinP
+pz=pz*cosP + dy*sinP
+
+if(pz<=0)return null
+
+let scale=600/pz
+
+return{
+x:canvas.width/2 + px*scale,
+y:canvas.height/2 - py*scale,
+scale:scale
+}
+
+}
 
 class Target{
 
@@ -138,41 +167,21 @@ if(this.y>wall.y+wall.height-margin||this.y<wall.y+margin) this.vy*=-1
 
 draw(){
 
-let dx=this.x-player.x
-let dy=this.y-player.y
-let dz=wall.z-player.z
+let p=project(this.x,this.y,wall.z)
+if(!p)return
 
-let cosY=Math.cos(player.yaw)
-let sinY=Math.sin(player.yaw)
+let r=25*p.scale/100
 
-let x=dx*cosY - dz*sinY
-let z=dz*cosY + dx*sinY
-
-let cosP=Math.cos(player.pitch)
-let sinP=Math.sin(player.pitch)
-
-let y=dy*cosP - z*sinP
-z=z*cosP + dy*sinP
-
-if(z<=0)return
-
-let scale=600/z
-
-let sx=canvas.width/2 + x*scale
-let sy=canvas.height/2 - y*scale
-
-let r=25*scale/100
-
-this.sx=sx
-this.sy=sy
+this.sx=p.x
+this.sy=p.y
 this.size=r
 
 let grad=ctx.createRadialGradient(
-sx-r*0.4,
-sy-r*0.4,
+p.x-r*0.4,
+p.y-r*0.4,
 r*0.2,
-sx,
-sy,
+p.x,
+p.y,
 r
 )
 
@@ -182,7 +191,7 @@ grad.addColorStop(1,"#aa0000")
 ctx.fillStyle=grad
 
 ctx.beginPath()
-ctx.arc(sx,sy,r,0,Math.PI*2)
+ctx.arc(p.x,p.y,r,0,Math.PI*2)
 ctx.fill()
 
 }
@@ -243,36 +252,6 @@ player.z-=Math.sin(player.yaw)*player.speed
 
 }
 
-function project(x,y,z){
-
-let dx=x-player.x
-let dy=y-player.y
-let dz=z-player.z
-
-let cosY=Math.cos(player.yaw)
-let sinY=Math.sin(player.yaw)
-
-let px=dx*cosY - dz*sinY
-let pz=dz*cosY + dx*sinY
-
-let cosP=Math.cos(player.pitch)
-let sinP=Math.sin(player.pitch)
-
-let py=dy*cosP - pz*sinP
-pz=pz*cosP + dy*sinP
-
-if(pz<=0) return null
-
-let scale=600/pz
-
-return{
-x:canvas.width/2 + px*scale,
-y:canvas.height/2 - py*scale,
-scale:scale
-}
-
-}
-
 function drawWall(){
 
 let p=project(0,wall.y+wall.height/2,wall.z)
@@ -305,33 +284,23 @@ ctx.fill()
 
 function drawFloor(){
 
+let size=20
+let step=2
+
 ctx.fillStyle="#222"
 
-ctx.beginPath()
-ctx.moveTo(0,canvas.height)
-ctx.lineTo(canvas.width,canvas.height)
-ctx.lineTo(canvas.width,canvas.height*0.65)
-ctx.lineTo(0,canvas.height*0.65)
-ctx.fill()
+for(let x=-size;x<size;x+=step){
+for(let z=1;z<size;z+=step){
+
+let p=project(x,0,z)
+if(!p)continue
+
+let s=step*p.scale*0.5
+
+ctx.fillRect(p.x-s/2,p.y-s/2,s,s)
 
 }
-
-function drawDeagle(){
-
-let baseX=canvas.width/2
-let baseY=canvas.height-70
-
-ctx.fillStyle="#2a2a2a"
-ctx.fillRect(baseX-45,baseY-15,90,25)
-
-ctx.fillStyle="#3a3a3a"
-ctx.fillRect(baseX-25,baseY-65,50,40)
-
-ctx.fillStyle="#555"
-ctx.fillRect(baseX-12,baseY-100,24,35)
-
-ctx.fillStyle="#1a1a1a"
-ctx.fillRect(baseX-18,baseY-40,36,45)
+}
 
 }
 
@@ -340,18 +309,15 @@ function loop(){
 ctx.fillStyle="#111"
 ctx.fillRect(0,0,canvas.width,canvas.height)
 
-drawFloor()
-
 move()
 
+drawFloor()
 drawWall()
 
 targets.forEach(t=>{
 t.update()
 t.draw()
 })
-
-drawDeagle()
 
 requestAnimationFrame(loop)
 
