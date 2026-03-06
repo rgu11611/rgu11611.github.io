@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Aim Trainer 3D</title>
 <style>
-body{margin:0;overflow:hidden;background:black;font-family:Arial}
+body{margin:0;overflow:hidden;background:black;font-family:Arial;}
 #score{position:fixed;top:15px;left:15px;color:white;font-size:22px;z-index:10;}
 #crosshair{position:fixed;top:50%;left:50%;width:20px;height:20px;margin-left:-10px;margin-top:-10px;pointer-events:none;}
 #crosshair:before,#crosshair:after{content:"";position:absolute;background:white;}
@@ -32,11 +32,10 @@ window.addEventListener('resize',()=> {
 });
 
 // === Lighting ===
-const ambient = new THREE.AmbientLight(0x555555);
-scene.add(ambient);
-const pointLight = new THREE.PointLight(0xffffff,1.5);
-pointLight.position.set(0,8,0);
-scene.add(pointLight);
+scene.add(new THREE.AmbientLight(0x555555));
+const light = new THREE.PointLight(0xffffff,1.5);
+light.position.set(0,8,0);
+scene.add(light);
 
 // === Room ===
 function createWall(w,h,d,x,y,z){
@@ -49,10 +48,10 @@ function createWall(w,h,d,x,y,z){
 const roomSize = 20;
 createWall(roomSize,0.5,roomSize,0,-0.25,0); // floor
 createWall(roomSize,0.5,roomSize,0,6,0); // ceiling
-createWall(roomSize,6,0.5,0,3,-roomSize/2); // back wall
-createWall(roomSize,6,0.5,0,3,roomSize/2); // front wall
-createWall(0.5,6,roomSize,-roomSize/2,3,0); // left wall
-createWall(0.5,6,roomSize,roomSize/2,3,0); // right wall
+createWall(roomSize,6,0.5,0,3,-roomSize/2); // back
+createWall(roomSize,6,0.5,0,3,roomSize/2); // front
+createWall(0.5,6,roomSize,-roomSize/2,3,0); // left
+createWall(0.5,6,roomSize,roomSize/2,3,0); // right
 
 // === Targets ===
 const targets = [];
@@ -70,7 +69,7 @@ function spawnTarget(){
 }
 for(let i=0;i<12;i++) spawnTarget();
 
-// === Raycaster ===
+// === Raycaster & Mouse ===
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2(0,0);
 
@@ -104,9 +103,13 @@ document.addEventListener("mousedown",()=>{
     const hits = raycaster.intersectObjects(targets);
     if(hits.length>0){
         const t = hits[0].object;
-        score++; scoreEl.textContent="Score: "+score;
+        score++; 
+        scoreEl.textContent="Score: "+score;
         t.position.x = (Math.random()*10)-5;
         t.position.y = 1 + Math.random()*4;
+        // efecto simple: parpadeo del target
+        t.material.emissive.setHex(0xffffff);
+        setTimeout(()=>t.material.emissive.setHex(0x550000),100);
     }
 });
 
