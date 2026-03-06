@@ -1,199 +1,122 @@
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <title>Aim Trainer 3D</title>
-
 <style>
-
-body{
-margin:0;
-overflow:hidden;
-background:black;
-font-family:Arial;
-}
-
-#score{
-position:fixed;
-top:20px;
-left:20px;
-color:white;
-font-size:24px;
-z-index:10;
-}
-
-#crosshair{
-position:fixed;
-top:50%;
-left:50%;
-width:20px;
-height:20px;
-margin-left:-10px;
-margin-top:-10px;
-pointer-events:none;
-}
-
-#crosshair:before,#crosshair:after{
-content:"";
-position:absolute;
-background:white;
-}
-
-#crosshair:before{
-width:2px;
-height:20px;
-left:9px;
-}
-
-#crosshair:after{
-height:2px;
-width:20px;
-top:9px;
-}
-
+body{margin:0;overflow:hidden;background:black;font-family:Arial}
+#score{position:fixed;top:15px;left:15px;color:white;font-size:22px;z-index:10;}
+#crosshair{position:fixed;top:50%;left:50%;width:20px;height:20px;margin-left:-10px;margin-top:-10px;pointer-events:none;}
+#crosshair:before,#crosshair:after{content:"";position:absolute;background:white;}
+#crosshair:before{width:2px;height:20px;left:9px;}
+#crosshair:after{height:2px;width:20px;top:9px;}
 </style>
-
 </head>
-
 <body>
-
 <div id="score">Score: 0</div>
 <div id="crosshair"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-
 <script>
+// === Scene & Renderer ===
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-let scene = new THREE.Scene()
+// Handle window resize
+window.addEventListener('resize',()=> {
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-let camera = new THREE.PerspectiveCamera(
-75,
-window.innerWidth/window.innerHeight,
-0.1,
-1000
-)
+// === Lighting ===
+const ambient = new THREE.AmbientLight(0x555555);
+scene.add(ambient);
+const pointLight = new THREE.PointLight(0xffffff,1.5);
+pointLight.position.set(0,8,0);
+scene.add(pointLight);
 
-let renderer = new THREE.WebGLRenderer({antialias:true})
-
-renderer.setSize(window.innerWidth,window.innerHeight)
-document.body.appendChild(renderer.domElement)
-
-camera.position.set(0,2,6)
-
-let score = 0
-let scoreUI = document.getElementById("score")
-
-const light = new THREE.PointLight(0xffffff,1.5)
-light.position.set(0,8,0)
-scene.add(light)
-
-scene.add(new THREE.AmbientLight(0x444444))
-
+// === Room ===
 function createWall(w,h,d,x,y,z){
-
-const g = new THREE.BoxGeometry(w,h,d)
-
-const m = new THREE.MeshStandardMaterial({
-color:0x222222,
-roughness:0.7
-})
-
-const mesh = new THREE.Mesh(g,m)
-
-mesh.position.set(x,y,z)
-
-scene.add(mesh)
-
+    const geo = new THREE.BoxGeometry(w,h,d);
+    const mat = new THREE.MeshStandardMaterial({color:0x333333, roughness:0.7});
+    const mesh = new THREE.Mesh(geo,mat);
+    mesh.position.set(x,y,z);
+    scene.add(mesh);
 }
+const roomSize = 20;
+createWall(roomSize,0.5,roomSize,0,-0.25,0); // floor
+createWall(roomSize,0.5,roomSize,0,6,0); // ceiling
+createWall(roomSize,6,0.5,0,3,-roomSize/2); // back wall
+createWall(roomSize,6,0.5,0,3,roomSize/2); // front wall
+createWall(0.5,6,roomSize,-roomSize/2,3,0); // left wall
+createWall(0.5,6,roomSize,roomSize/2,3,0); // right wall
 
-const room = 20
-
-createWall(room,0.5,room,0,-0.25,0)
-createWall(room,0.5,room,0,6,0)
-
-createWall(room,6,0.5,0,3,-room/2)
-createWall(room,6,0.5,0,3,room/2)
-
-createWall(0.5,6,room,-room/2,3,0)
-createWall(0.5,6,room,room/2,3,0)
-
-const targets = []
-
+// === Targets ===
+const targets = [];
 function spawnTarget(){
-
-const geo = new THREE.SphereGeometry(0.4,32,32)
-
-const mat = new THREE.MeshStandardMaterial({
-color:0xff3333,
-emissive:0x550000
-})
-
-const t = new THREE.Mesh(geo,mat)
-
-t.position.x = (Math.random()*10)-5
-t.position.y = 1 + Math.random()*4
-t.position.z = -9
-
-t.userData.speed = (Math.random()*0.03)+0.01
-t.userData.dir = Math.random()>0.5?1:-1
-
-scene.add(t)
-targets.push(t)
-
+    const geo = new THREE.SphereGeometry(0.4,32,32);
+    const mat = new THREE.MeshStandardMaterial({color:0xff3333,emissive:0x550000});
+    const t = new THREE.Mesh(geo,mat);
+    t.position.x = (Math.random()*10)-5;
+    t.position.y = 1 + Math.random()*4;
+    t.position.z = -9;
+    t.userData.speed = (Math.random()*0.03)+0.01;
+    t.userData.dir = Math.random()>0.5?1:-1;
+    scene.add(t);
+    targets.push(t);
 }
+for(let i=0;i<12;i++) spawnTarget();
 
-for(let i=0;i<12;i++){
-spawnTarget()
-}
+// === Raycaster ===
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2(0,0);
 
-const raycaster = new THREE.Raycaster()
+// === Score ===
+let score = 0;
+const scoreEl = document.getElementById("score");
 
-document.addEventListener("mousedown",()=>{
-
-raycaster.setFromCamera({x:0,y:0},camera)
-
-const hits = raycaster.intersectObjects(targets)
-
-if(hits.length>0){
-
-let t = hits[0].object
-
-score++
-scoreUI.innerHTML="Score: "+score
-
-t.position.x = (Math.random()*10)-5
-t.position.y = 1 + Math.random()*4
-
-}
-
-})
-
+// === Update Targets ===
 function updateTargets(){
-
-targets.forEach(t=>{
-
-t.position.y += t.userData.speed * t.userData.dir
-
-if(t.position.y>5 || t.position.y<1){
-
-t.userData.dir *= -1
-
+    targets.forEach(t=>{
+        t.position.y += t.userData.speed * t.userData.dir;
+        if(t.position.y>5 || t.position.y<1) t.userData.dir *= -1;
+    });
 }
 
-})
-
-}
-
-let yaw = 0
-let pitch = 0
-
-document.body.onclick=()=>{
-document.body.requestPointerLock()
-}
-
+// === FPS Controls ===
+let yaw = 0, pitch = 0;
+document.body.onclick=()=>{document.body.requestPointerLock();}
 document.addEventListener("mousemove",(e)=>{
+    if(document.pointerLockElement){
+        yaw -= e.movementX*0.002;
+        pitch -= e.movementY*0.002;
+        pitch = Math.max(-1.5,Math.min(1.5,pitch));
+        camera.rotation.set(pitch,yaw,0);
+    }
+});
 
-if(document.pointerLockElement){
+// === Shoot ===
+document.addEventListener("mousedown",()=>{
+    raycaster.setFromCamera(mouse,camera);
+    const hits = raycaster.intersectObjects(targets);
+    if(hits.length>0){
+        const t = hits[0].object;
+        score++; scoreEl.textContent="Score: "+score;
+        t.position.x = (Math.random()*10)-5;
+        t.position.y = 1 + Math.random()*4;
+    }
+});
 
-yaw -= e.movemen
+// === Animate Loop ===
+function animate(){
+    requestAnimationFrame(animate);
+    updateTargets();
+    renderer.render(scene,camera);
+}
+animate();
+</script>
+</body>
+</html>
