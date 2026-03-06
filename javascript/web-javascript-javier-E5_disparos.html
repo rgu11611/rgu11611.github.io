@@ -59,7 +59,7 @@ let particles=[]
 
 const wall={z:8,width:6,height:3,y:2}
 
-// Gestion menú
+// Gestión menú
 let menuOpen=false
 document.addEventListener("keydown",e=>{
 if(e.key==="Tab"){e.preventDefault();menuOpen=!menuOpen;menu.style.display=menuOpen?"block":"none";}
@@ -147,8 +147,7 @@ for(let i=0;i<15;i++)particles.push(new Particle(t.sx,t.sy,crossSelect.value))
 })
 }
 
-document.addEventListener("click",shoot)
-
+// Dibujar muro estático
 function drawWall(){
 ctx.fillStyle="#555"
 let scale=canvas.height/400
@@ -168,11 +167,11 @@ ctx.quadraticCurveTo(px-w/2,py-h/2,px-w/2+r,py-h/2)
 ctx.fill()
 }
 
+// Dibujar suelo estático debajo del personaje
 function drawFloor(){
 ctx.strokeStyle="#333"; ctx.lineWidth=2
 for(let z=1; z<20; z+=0.5){
-let startX=0, endX=canvas.width/1
-let y=canvas.height/2+z*15
+let y=canvas.height/2+150+z*20
 ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke()
 }
 }
