@@ -2,168 +2,142 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Mini Doom con Enemigos</title>
+<title>CSGO Aim Trainer</title>
 <style>
-body{margin:0;overflow:hidden;background:#111;}
-canvas{display:block;}
-#score{position:fixed;top:10px;left:10px;color:white;font-family:Arial;font-size:22px;z-index:10;}
-#crosshair{position:fixed;top:50%;left:50%;width:20px;height:20px;margin-left:-10px;margin-top:-10px;pointer-events:none;}
-#crosshair:before,#crosshair:after{content:"";position:absolute;background:white;}
-#crosshair:before{width:2px;height:20px;left:9px;}
-#crosshair:after{height:2px;width:20px;top:9px;}
+body{
+    margin:0;
+    background:#111;
+    color:white;
+    font-family:Arial, sans-serif;
+    overflow:hidden;
+}
+
+#hud{
+    position:fixed;
+    top:10px;
+    left:10px;
+    font-size:18px;
+}
+
+#target{
+    position:absolute;
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    background:red;
+    display:none;
+}
+
+#crosshair{
+    position:fixed;
+    left:50%;
+    top:50%;
+    width:20px;
+    height:20px;
+    transform:translate(-50%,-50%);
+    pointer-events:none;
+}
+
+.line{
+    position:absolute;
+    background:white;
+}
+
+#v{ width:2px;height:20px;left:9px;}
+#h{ height:2px;width:20px;top:9px;}
 </style>
 </head>
 <body>
-<div id="score">Score: 0</div>
-<div id="crosshair"></div>
-<canvas id="game"></canvas>
+
+<div id="hud">
+Puntos: <span id="score">0</span> |
+Tiempo: <span id="time">30</span>
+</div>
+
+<div id="target"></div>
+
+<div id="crosshair">
+<div class="line" id="v"></div>
+<div class="line" id="h"></div>
+</div>
+
 <script>
-// ===== Canvas =====
-const canvas=document.getElementById('game');
-const ctx=canvas.getContext('2d');
-canvas.width=window.innerWidth;
-canvas.height=window.innerHeight;
-window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
 
-// ===== Mapa y enemigos =====
-const map=[
-[1,1,1,1,1,1,1,1,1,1],
-[1,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,0,0,0,0,0,1],
-[1,1,1,1,1,1,1,1,1,1]
-];
-const tileSize=64;
+let score = 0
+let time = 30
+let gameRunning = true
 
-// ===== Player =====
-let player={x:2*tileSize,y:2*tileSize,angle:0,speed:0,health:100};
-let keys={};
-let score=0;
-const scoreEl=document.getElementById('score');
+const target = document.getElementById("target")
+const scoreEl = document.getElementById("score")
+const timeEl = document.getElementById("time")
 
-// ===== Enemigos =====
-class Enemy{
-    constructor(x,y){
-        this.x=x; this.y=y; this.alive=true;
+function spawnTarget(){
+
+    if(!gameRunning) return
+
+    const size = 40 + Math.random()*40
+
+    const x = Math.random()*(window.innerWidth-size)
+    const y = Math.random()*(window.innerHeight-size)
+
+    target.style.width = size+"px"
+    target.style.height = size+"px"
+
+    target.style.left = x+"px"
+    target.style.top = y+"px"
+
+    target.style.display = "block"
+}
+
+target.addEventListener("click", e => {
+
+    if(!gameRunning) return
+
+    score++
+    scoreEl.textContent = score
+
+    target.style.display="none"
+
+    setTimeout(spawnTarget, 200)
+
+})
+
+document.body.addEventListener("click", e => {
+
+    if(e.target !== target){
+        score = Math.max(0, score-1)
+        scoreEl.textContent = score
     }
-    update(){
-        if(!this.alive) return;
-        const dx=player.x-this.x;
-        const dy=player.y-this.y;
-        const dist=Math.sqrt(dx*dx+dy*dy);
-        if(dist>20){
-            this.x+=dx/dist*0.5;
-            this.y+=dy/dist*0.5;
+
+})
+
+function timer(){
+
+    const interval = setInterval(()=>{
+
+        time--
+        timeEl.textContent = time
+
+        if(time <= 0){
+
+            clearInterval(interval)
+            gameRunning = false
+            target.style.display="none"
+
+            setTimeout(()=>{
+                alert("Tiempo terminado\nPuntos: "+score)
+            },100)
+
         }
-        // Puede atacar si quieres añadir salud del player
-    }
-    draw(ctx,player){
-        if(!this.alive) return;
-        // Proyección simple 3D
-        const dx=this.x-player.x;
-        const dy=this.y-player.y;
-        const angleToEnemy=Math.atan2(dy,dx)-player.angle;
-        const dist=Math.sqrt(dx*dx+dy*dy);
-        if(Math.abs(angleToEnemy)<Math.PI/6 && dist>0.1){
-            const h=(tileSize*canvas.height)/dist;
-            const screenX=canvas.width/2+Math.tan(angleToEnemy)*canvas.width/2;
-            ctx.fillStyle='red';
-            ctx.fillRect(screenX-h/2,canvas.height/2-h/2,h,h);
-        }
-    }
-}
-let enemies=[
-    new Enemy(5*tileSize,3*tileSize),
-    new Enemy(7*tileSize,5*tileSize),
-    new Enemy(4*tileSize,6*tileSize)
-];
 
-// ===== Controles =====
-document.addEventListener('keydown',e=>keys[e.key]=true);
-document.addEventListener('keyup',e=>keys[e.key]=false);
-document.body.onclick=()=>document.body.requestPointerLock();
-document.addEventListener('mousemove',e=>{if(document.pointerLockElement)player.angle+=e.movementX*0.003});
+    },1000)
 
-// ===== Disparo =====
-let recoil=0;
-document.addEventListener('mousedown',()=>{
-    const rayLength=300;
-    const rayX=player.x+Math.cos(player.angle)*rayLength;
-    const rayY=player.y+Math.sin(player.angle)*rayLength;
-    enemies.forEach(e=>{
-        if(!e.alive) return;
-        const dx=e.x-rayX;
-        const dy=e.y-rayY;
-        if(Math.sqrt(dx*dx+dy*dy)<30){
-            e.alive=false;
-            score++;
-            scoreEl.textContent="Score: "+score;
-        }
-    });
-    recoil=5;
-});
-
-// ===== Movimiento Player =====
-function movePlayer(){
-    let speed=0;
-    if(keys['w']) speed=2;
-    if(keys['s']) speed=-2;
-    const nx=player.x+Math.cos(player.angle)*speed;
-    const ny=player.y+Math.sin(player.angle)*speed;
-    const mapX=Math.floor(nx/tileSize);
-    const mapY=Math.floor(ny/tileSize);
-    if(map[mapY] && map[mapY][mapX]===0) player.x=nx, player.y=ny;
-    if(keys['a']) player.angle-=0.03;
-    if(keys['d']) player.angle+=0.03;
 }
 
-// ===== Raycasting paredes =====
-function draw3D(){
-    const numRays=canvas.width;
-    const fov=Math.PI/3;
-    const halfFOV=fov/2;
-    for(let i=0;i<numRays;i++){
-        const rayAngle=player.angle-halfFOV+(i/numRays)*fov;
-        let distance=0, hit=false, wallType=0;
-        while(!hit && distance<1000){
-            distance+=1;
-            const rayX=player.x+Math.cos(rayAngle)*distance;
-            const rayY=player.y+Math.sin(rayAngle)*distance;
-            const mx=Math.floor(rayX/tileSize);
-            const my=Math.floor(rayY/tileSize);
-            if(map[my] && map[my][mx]>0){hit=true;wallType=map[my][mx];}
-        }
-        const wallHeight=(tileSize*canvas.height)/distance;
-        ctx.fillStyle=wallType===1?'#666':'#c33';
-        ctx.fillRect(i,canvas.height/2-wallHeight/2,1,wallHeight);
-    }
-}
+spawnTarget()
+timer()
 
-// ===== Arma visible =====
-function drawGun(){
-    const w=60,h=40,x=canvas.width/2-w/2,y=canvas.height-h-20-recoil;
-    ctx.fillStyle='darkgray';
-    ctx.fillRect(x,y,w,h);
-    ctx.fillStyle='black';
-    ctx.fillRect(x+10,y+10,40,20);
-    if(recoil>0) recoil-=1;
-}
-
-// ===== Loop principal =====
-function loop(){
-    ctx.fillStyle='#111';
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    movePlayer();
-    draw3D();
-    enemies.forEach(e=>{e.update(); e.draw(ctx,player);});
-    drawGun();
-    requestAnimationFrame(loop);
-}
-loop();
 </script>
+
 </body>
 </html>
