@@ -2,15 +2,20 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Mini Doom JS</title>
+<title>Mini Doom Completo</title>
 <style>
-body{margin:0;overflow:hidden;background:black;}
-canvas{display:block;}
-#score{position:fixed;top:10px;left:10px;color:white;font-family:Arial;font-size:22px;z-index:10;}
+body { margin:0; overflow:hidden; background:black; }
+canvas { display:block; }
+#score { position:fixed; top:10px; left:10px; color:white; font-family:Arial; font-size:22px; z-index:10;}
+#crosshair { position:fixed; top:50%; left:50%; width:20px; height:20px; margin-left:-10px; margin-top:-10px; pointer-events:none; }
+#crosshair:before, #crosshair:after { content:""; position:absolute; background:white; }
+#crosshair:before { width:2px; height:20px; left:9px; }
+#crosshair:after { width:20px; height:2px; top:9px; }
 </style>
 </head>
 <body>
 <div id="score">Score: 0</div>
+<div id="crosshair"></div>
 <canvas id="game"></canvas>
 <script>
 const canvas = document.getElementById('game');
@@ -18,41 +23,42 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-window.addEventListener('resize',()=>{
+window.addEventListener('resize', ()=>{
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 });
 
+// ===== Mapa =====
 const map = [
 [1,1,1,1,1,1,1,1,1,1],
 [1,0,0,0,0,0,0,0,0,1],
 [1,0,0,0,0,0,0,0,0,1],
 [1,0,0,2,0,0,0,0,0,1],
+[1,0,0,0,0,0,0,2,0,1],
 [1,0,0,0,0,0,0,0,0,1],
-[1,0,0,0,0,2,0,0,0,1],
-[1,0,0,0,0,0,0,0,0,1],
+[1,0,0,2,0,0,0,0,0,1],
 [1,0,0,0,0,0,0,0,0,1],
 [1,1,1,1,1,1,1,1,1,1]
 ];
-
 const tileSize = 64;
-let player = {x: 2*tileSize, y: 2*tileSize, angle:0, speed:0};
+
+// ===== Player =====
+let player = {x:2*tileSize, y:2*tileSize, angle:0, speed:0};
 let score = 0;
 const scoreEl = document.getElementById('score');
+const keys = {};
 
-document.addEventListener('keydown', e=>{
-    if(e.key==='w') player.speed = 2;
-    if(e.key==='s') player.speed = -2;
-});
-document.addEventListener('keyup', e=>{
-    if(e.key==='w' || e.key==='s') player.speed = 0;
-});
+// ===== Controles =====
+document.addEventListener('keydown', e=> keys[e.key]=true);
+document.addEventListener('keyup', e=> keys[e.key]=false);
 document.addEventListener('mousemove', e=>{
-    player.angle += e.movementX*0.003;
+    if(document.pointerLockElement) player.angle += e.movementX*0.003;
 });
+document.body.onclick = ()=> document.body.requestPointerLock();
 
-// Shoot with click
-document.addEventListener('mousedown',()=>{
+// ===== Disparar y retroceso =====
+let recoil = 0;
+document.addEventListener('mousedown', ()=>{
     const rayLength = 300;
     const hitX = player.x + Math.cos(player.angle)*rayLength;
     const hitY = player.y + Math.sin(player.angle)*rayLength;
@@ -63,16 +69,24 @@ document.addEventListener('mousedown',()=>{
         score++;
         scoreEl.textContent = "Score: "+score;
     }
+    recoil = 5; // Retroceso
 });
 
-function update(){
-    const nx = player.x + Math.cos(player.angle)*player.speed;
-    const ny = player.y + Math.sin(player.angle)*player.speed;
+// ===== Movimiento del player =====
+function movePlayer(){
+    let speed = 0;
+    if(keys['w']) speed = 2;
+    if(keys['s']) speed = -2;
+    const nx = player.x + Math.cos(player.angle)*speed;
+    const ny = player.y + Math.sin(player.angle)*speed;
     const mapX = Math.floor(nx/tileSize);
     const mapY = Math.floor(ny/tileSize);
     if(map[mapY][mapX]===0) {player.x=nx; player.y=ny;}
+    if(keys['a']) player.angle -= 0.03;
+    if(keys['d']) player.angle += 0.03;
 }
 
+// ===== Dibujar 3D estilo Doom =====
 function draw3D(){
     const numRays = canvas.width;
     const fov = Math.PI/3;
@@ -99,11 +113,26 @@ function draw3D(){
     }
 }
 
+// ===== Dibujar arma simple =====
+function drawGun(){
+    const gunWidth = 60;
+    const gunHeight = 40;
+    const x = canvas.width/2 - gunWidth/2;
+    const y = canvas.height - gunHeight - 20 - recoil;
+    ctx.fillStyle = 'darkgray';
+    ctx.fillRect(x,y,gunWidth,gunHeight);
+    ctx.fillStyle='black';
+    ctx.fillRect(x+10,y+10,40,20);
+    if(recoil>0) recoil -=1;
+}
+
+// ===== Loop principal =====
 function loop(){
     ctx.fillStyle='black';
     ctx.fillRect(0,0,canvas.width,canvas.height);
-    update();
+    movePlayer();
     draw3D();
+    drawGun();
     requestAnimationFrame(loop);
 }
 loop();
