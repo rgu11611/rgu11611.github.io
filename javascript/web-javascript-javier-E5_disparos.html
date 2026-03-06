@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Mini CSGO Training</title>
+<title>FPS Aim Trainer</title>
 
 <style>
 body{margin:0;overflow:hidden;background:black;font-family:Arial}
@@ -14,7 +14,6 @@ top:10px;
 left:10px;
 color:white;
 font-size:18px;
-z-index:2
 }
 
 #crosshair{
@@ -26,13 +25,12 @@ height:18px;
 margin-left:-9px;
 margin-top:-9px;
 pointer-events:none;
-z-index:3
 }
 
 #crosshair:before,#crosshair:after{
 content:"";
 position:absolute;
-background:white
+background:white;
 }
 
 #crosshair:before{width:2px;height:18px;left:8px}
@@ -45,17 +43,13 @@ left:50%;
 transform:translate(-50%,-50%);
 color:white;
 font-size:30px;
-z-index:4
 }
 </style>
 </head>
 
 <body>
 
-<div id="hud">
-Puntos: <span id="score">0</span>
-</div>
-
+<div id="hud">Puntos: <span id="score">0</span></div>
 <div id="crosshair"></div>
 <div id="start">Click para jugar</div>
 
@@ -73,7 +67,6 @@ const scoreEl=document.getElementById("score")
 const start=document.getElementById("start")
 
 let score=0
-
 let recoil=0
 
 const player={
@@ -102,12 +95,10 @@ if(document.pointerLockElement===canvas){
 player.yaw += e.movementX*0.002
 player.pitch -= e.movementY*0.002
 
-player.pitch-=recoil
+player.pitch -= recoil
+recoil *= 0.85
 
-recoil*=0.9
-
-if(player.pitch>1.3) player.pitch=1.3
-if(player.pitch<-1.3) player.pitch=-1.3
+player.pitch=Math.max(-1.2,Math.min(1.2,player.pitch))
 
 }
 
@@ -120,22 +111,19 @@ this.reset()
 }
 
 reset(){
-this.x=(Math.random()-0.5)*10
-this.y=Math.random()*4+1
-this.vx=(Math.random()-0.5)*0.05
+this.x=(Math.random()-0.5)*6
+this.y=Math.random()*3+1
+this.vx=(Math.random()-0.5)*0.03
 }
 
 update(){
-
 this.x+=this.vx
-
-if(this.x>5||this.x<-5) this.vx*=-1
-
+if(this.x>3||this.x<-3) this.vx*=-1
 }
 
 draw(){
 
-let wallZ=20
+const wallZ=10
 
 let dx=this.x-player.x
 let dy=this.y-player.y
@@ -153,20 +141,35 @@ let sinP=Math.sin(player.pitch)
 let y=dy*cosP - z*sinP
 z=z*cosP + dy*sinP
 
-if(z<=0) return
+if(z<=0)return
 
-let scale=500/z
+let scale=600/z
 
 let sx=canvas.width/2 + x*scale
 let sy=canvas.height/2 - y*scale
 
+let r=30*scale/100
+
 this.sx=sx
 this.sy=sy
-this.size=25*scale/100
+this.size=r
+
+let grad=ctx.createRadialGradient(
+sx-r*0.3,
+sy-r*0.3,
+r*0.1,
+sx,
+sy,
+r
+)
+
+grad.addColorStop(0,"#ffaaaa")
+grad.addColorStop(1,"#aa0000")
+
+ctx.fillStyle=grad
 
 ctx.beginPath()
-ctx.arc(sx,sy,this.size,0,Math.PI*2)
-ctx.fillStyle="red"
+ctx.arc(sx,sy,r,0,Math.PI*2)
 ctx.fill()
 
 }
@@ -174,34 +177,9 @@ ctx.fill()
 }
 
 let targets=[]
-for(let i=0;i<8;i++) targets.push(new Target())
-
-function playShoot(){
-
-let a=new AudioContext()
-let o=a.createOscillator()
-let g=a.createGain()
-
-o.connect(g)
-g.connect(a.destination)
-
-o.type="square"
-o.frequency.value=180
-
-g.gain.value=0.2
-
-o.start()
-
-setTimeout(()=>{
-o.stop()
-a.close()
-},60)
-
-}
+for(let i=0;i<8;i++)targets.push(new Target())
 
 function shoot(){
-
-playShoot()
 
 recoil+=0.02
 
@@ -251,31 +229,49 @@ player.z-=Math.sin(player.yaw)*player.speed
 
 }
 
-function drawWorld(){
+function drawWall(){
 
-ctx.fillStyle="#1a1a1a"
-ctx.fillRect(0,0,canvas.width,canvas.height/2)
+const wallZ=10
+const width=8
+const height=5
 
-ctx.fillStyle="#0f0f0f"
-ctx.fillRect(0,canvas.height/2,canvas.width,canvas.height)
+let dx=-player.x
+let dy=0-player.y
+let dz=wallZ-player.z
+
+let cosY=Math.cos(player.yaw)
+let sinY=Math.sin(player.yaw)
+
+let x=dx*cosY - dz*sinY
+let z=dz*cosY + dx*sinY
+
+let cosP=Math.cos(player.pitch)
+let sinP=Math.sin(player.pitch)
+
+let y=dy*cosP - z*sinP
+z=z*cosP + dy*sinP
+
+if(z<=0)return
+
+let scale=600/z
+
+let sx=canvas.width/2 + x*scale
+let sy=canvas.height/2 - y*scale
 
 ctx.fillStyle="#444"
 
-let wallWidth=800
-let wallHeight=400
-
 ctx.fillRect(
-canvas.width/2-wallWidth/2,
-canvas.height/2-wallHeight/2,
-wallWidth,
-wallHeight
+sx-width*scale/2,
+sy-height*scale/2,
+width*scale,
+height*scale
 )
 
 }
 
 function drawGun(){
 
-let w=200
+let w=220
 let h=120
 
 let x=canvas.width/2-w/2
@@ -285,15 +281,18 @@ ctx.fillStyle="#333"
 ctx.fillRect(x,y,w,h)
 
 ctx.fillStyle="#222"
-ctx.fillRect(x+80,y-40,40,40)
+ctx.fillRect(x+90,y-40,40,40)
 
 }
 
 function loop(){
 
+ctx.fillStyle="#111"
+ctx.fillRect(0,0,canvas.width,canvas.height)
+
 move()
 
-drawWorld()
+drawWall()
 
 targets.forEach(t=>{
 t.update()
