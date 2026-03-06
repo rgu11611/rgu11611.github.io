@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -9,16 +10,16 @@
 body{
 margin:0;
 overflow:hidden;
-background:#111;
+background:black;
 font-family:Arial;
 }
 
-#hud{
+#score{
 position:fixed;
-top:15px;
+top:20px;
 left:20px;
 color:white;
-font-size:22px;
+font-size:24px;
 z-index:10;
 }
 
@@ -26,10 +27,10 @@ z-index:10;
 position:fixed;
 top:50%;
 left:50%;
-width:18px;
-height:18px;
-margin-left:-9px;
-margin-top:-9px;
+width:20px;
+height:20px;
+margin-left:-10px;
+margin-top:-10px;
 pointer-events:none;
 }
 
@@ -41,127 +42,110 @@ background:white;
 
 #crosshair:before{
 width:2px;
-height:18px;
-left:8px;
+height:20px;
+left:9px;
 }
 
 #crosshair:after{
 height:2px;
-width:18px;
-top:8px;
+width:20px;
+top:9px;
 }
 
 </style>
+
 </head>
+
 <body>
 
-<div id="hud">Score: <span id="score">0</span></div>
+<div id="score">Score: 0</div>
 <div id="crosshair"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
 <script>
 
-const scene = new THREE.Scene()
+let scene = new THREE.Scene()
 
-const camera = new THREE.PerspectiveCamera(
+let camera = new THREE.PerspectiveCamera(
 75,
 window.innerWidth/window.innerHeight,
 0.1,
 1000
 )
 
-const renderer = new THREE.WebGLRenderer({antialias:true})
+let renderer = new THREE.WebGLRenderer({antialias:true})
 
 renderer.setSize(window.innerWidth,window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
-camera.position.set(0,1.6,5)
+camera.position.set(0,2,6)
 
 let score = 0
-const scoreEl = document.getElementById("score")
+let scoreUI = document.getElementById("score")
 
-// luces
-
-const light = new THREE.PointLight(0xffffff,1)
-light.position.set(0,6,0)
+const light = new THREE.PointLight(0xffffff,1.5)
+light.position.set(0,8,0)
 scene.add(light)
 
-scene.add(new THREE.AmbientLight(0x666666))
-
-// habitación
-
-const wallMaterial = new THREE.MeshStandardMaterial({color:0x3a3a3a})
+scene.add(new THREE.AmbientLight(0x444444))
 
 function createWall(w,h,d,x,y,z){
 
 const g = new THREE.BoxGeometry(w,h,d)
-const m = new THREE.Mesh(g,wallMaterial)
 
-m.position.set(x,y,z)
-scene.add(m)
+const m = new THREE.MeshStandardMaterial({
+color:0x222222,
+roughness:0.7
+})
+
+const mesh = new THREE.Mesh(g,m)
+
+mesh.position.set(x,y,z)
+
+scene.add(mesh)
 
 }
 
-const size = 20
+const room = 20
 
-createWall(size,0.5,size,0,-0.25,0)   // suelo
-createWall(size,0.5,size,0,5,0)       // techo
+createWall(room,0.5,room,0,-0.25,0)
+createWall(room,0.5,room,0,6,0)
 
-createWall(size,5,0.5,0,2.5,-size/2)
-createWall(size,5,0.5,0,2.5,size/2)
+createWall(room,6,0.5,0,3,-room/2)
+createWall(room,6,0.5,0,3,room/2)
 
-createWall(0.5,5,size,-size/2,2.5,0)
-createWall(0.5,5,size,size/2,2.5,0)
+createWall(0.5,6,room,-room/2,3,0)
+createWall(0.5,6,room,room/2,3,0)
 
-// targets
-
-const targets=[]
+const targets = []
 
 function spawnTarget(){
 
-const geo = new THREE.CircleGeometry(0.4,32)
+const geo = new THREE.SphereGeometry(0.4,32,32)
 
-const mat = new THREE.MeshBasicMaterial({
-color:0xff3b3b
+const mat = new THREE.MeshStandardMaterial({
+color:0xff3333,
+emissive:0x550000
 })
 
 const t = new THREE.Mesh(geo,mat)
 
 t.position.x = (Math.random()*10)-5
-t.position.y = 1 + Math.random()*3
+t.position.y = 1 + Math.random()*4
 t.position.z = -9
 
-t.userData.vy = (Math.random()-0.5)*0.05
+t.userData.speed = (Math.random()*0.03)+0.01
+t.userData.dir = Math.random()>0.5?1:-1
 
 scene.add(t)
 targets.push(t)
 
 }
 
-for(let i=0;i<15;i++){
+for(let i=0;i<12;i++){
 spawnTarget()
 }
-
-// movimiento targets
-
-function updateTargets(){
-
-targets.forEach(t=>{
-
-t.position.y += t.userData.vy
-
-if(t.position.y>4 || t.position.y<1){
-
-t.userData.vy *= -1
-
-}
-
-})
-
-}
-
-// disparo
 
 const raycaster = new THREE.Raycaster()
 
@@ -169,64 +153,47 @@ document.addEventListener("mousedown",()=>{
 
 raycaster.setFromCamera({x:0,y:0},camera)
 
-const hit = raycaster.intersectObjects(targets)
+const hits = raycaster.intersectObjects(targets)
 
-if(hit.length>0){
+if(hits.length>0){
 
-const t = hit[0].object
+let t = hits[0].object
 
 score++
-scoreEl.textContent = score
-
-// respawn
+scoreUI.innerHTML="Score: "+score
 
 t.position.x = (Math.random()*10)-5
-t.position.y = 1 + Math.random()*3
+t.position.y = 1 + Math.random()*4
 
 }
 
 })
 
-// control FPS
+function updateTargets(){
 
-let yaw=0
-let pitch=0
-const sens=0.002
+targets.forEach(t=>{
+
+t.position.y += t.userData.speed * t.userData.dir
+
+if(t.position.y>5 || t.position.y<1){
+
+t.userData.dir *= -1
+
+}
+
+})
+
+}
+
+let yaw = 0
+let pitch = 0
 
 document.body.onclick=()=>{
 document.body.requestPointerLock()
 }
 
-document.addEventListener("mousemove",e=>{
+document.addEventListener("mousemove",(e)=>{
 
 if(document.pointerLockElement){
 
-yaw -= e.movementX*sens
-pitch -= e.movementY*sens
-
-pitch = Math.max(-1.5,Math.min(1.5,pitch))
-
-camera.rotation.set(pitch,yaw,0)
-
-}
-
-})
-
-// loop
-
-function animate(){
-
-requestAnimationFrame(animate)
-
-updateTargets()
-
-renderer.render(scene,camera)
-
-}
-
-animate()
-
-</script>
-
-</body>
-</html>
+yaw -= e.movemen
