@@ -2,13 +2,13 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>CSGO Aim Trainer</title>
+<title>CS2 Aim Trainer</title>
 
 <style>
 
 body{
 margin:0;
-background:#111;
+background:#0f0f0f;
 color:white;
 font-family:Arial;
 cursor:none;
@@ -19,23 +19,45 @@ overflow:hidden;
 position:fixed;
 top:10px;
 left:10px;
-font-size:20px;
+font-size:18px;
+line-height:26px;
+z-index:10;
 }
 
-#target{
+#world{
+position:absolute;
+width:4000px;
+height:4000px;
+}
+
+.target{
 position:absolute;
 width:60px;
 height:60px;
 border-radius:50%;
-background:red;
-display:none;
+background:#ff2b2b;
+box-shadow:0 0 12px red;
+}
+
+.head{
+position:absolute;
+width:24px;
+height:24px;
+border-radius:50%;
+background:yellow;
+top:18px;
+left:18px;
 }
 
 #crosshair{
 position:fixed;
-width:20px;
-height:20px;
+left:50%;
+top:50%;
+width:26px;
+height:26px;
+transform:translate(-50%,-50%);
 pointer-events:none;
+z-index:20;
 }
 
 .line{
@@ -45,14 +67,14 @@ background:white;
 
 #v{
 width:2px;
-height:20px;
-left:9px;
+height:26px;
+left:12px;
 }
 
 #h{
 height:2px;
-width:20px;
-top:9px;
+width:26px;
+top:12px;
 }
 
 </style>
@@ -61,11 +83,13 @@ top:9px;
 <body>
 
 <div id="hud">
-Puntos: <span id="score">0</span> |
-Tiempo: <span id="time">30</span>
+Puntos: <span id="score">0</span><br>
+Disparos: <span id="shots">0</span><br>
+Precisión: <span id="accuracy">0%</span><br>
+Tiempo: <span id="time">45</span>
 </div>
 
-<div id="target"></div>
+<div id="world"></div>
 
 <div id="crosshair">
 <div class="line" id="v"></div>
@@ -74,80 +98,122 @@ Tiempo: <span id="time">30</span>
 
 <script>
 
-let score = 0
-let time = 30
-let running = true
+let score=0
+let shots=0
+let hits=0
+let time=45
+let running=true
 
-const target = document.getElementById("target")
-const crosshair = document.getElementById("crosshair")
-const scoreEl = document.getElementById("score")
-const timeEl = document.getElementById("time")
+const world=document.getElementById("world")
 
-// mover mira con el mouse
-document.addEventListener("mousemove", e =>{
+const scoreEl=document.getElementById("score")
+const shotsEl=document.getElementById("shots")
+const accEl=document.getElementById("accuracy")
+const timeEl=document.getElementById("time")
 
-crosshair.style.left = (e.clientX - 10) + "px"
-crosshair.style.top = (e.clientY - 10) + "px"
+let camX=2000
+let camY=2000
+
+// mover "cámara"
+document.addEventListener("mousemove",e=>{
+
+camX += e.movementX * -1
+camY += e.movementY * -1
+
+world.style.transform = `translate(${-camX + window.innerWidth/2}px, ${-camY + window.innerHeight/2}px)`
 
 })
 
+// crear targets
 function spawnTarget(){
 
 if(!running) return
 
-const size = 40 + Math.random()*40
+const t=document.createElement("div")
+t.className="target"
 
-const x = Math.random()*(window.innerWidth-size)
-const y = Math.random()*(window.innerHeight-size)
+const head=document.createElement("div")
+head.className="head"
 
-target.style.width = size+"px"
-target.style.height = size+"px"
+t.appendChild(head)
 
-target.style.left = x+"px"
-target.style.top = y+"px"
+const x=Math.random()*3800
+const y=Math.random()*3800
 
-target.style.display = "block"
+t.style.left=x+"px"
+t.style.top=y+"px"
+
+world.appendChild(t)
+
+head.onclick=(e)=>{
+
+e.stopPropagation()
+
+score+=2
+hits++
+shots++
+
+updateStats()
+
+t.remove()
+spawnTarget()
 
 }
 
-target.onclick = ()=>{
-
-if(!running) return
+t.onclick=()=>{
 
 score++
-scoreEl.textContent = score
+hits++
+shots++
 
-target.style.display="none"
+updateStats()
 
-setTimeout(spawnTarget,200)
+t.remove()
+spawnTarget()
 
-}
-
-document.body.onclick = e =>{
-
-if(e.target !== target){
-score = Math.max(0, score-1)
-scoreEl.textContent = score
 }
 
 }
 
-function startTimer(){
+document.body.onclick=e=>{
 
-const t = setInterval(()=>{
+if(!e.target.classList.contains("target") && !e.target.classList.contains("head")){
+
+shots++
+updateStats()
+
+}
+
+}
+
+function updateStats(){
+
+scoreEl.textContent=score
+shotsEl.textContent=shots
+
+let acc=shots?Math.round((hits/shots)*100):0
+accEl.textContent=acc+"%"
+
+}
+
+function timer(){
+
+const t=setInterval(()=>{
 
 time--
-timeEl.textContent = time
+timeEl.textContent=time
 
 if(time<=0){
 
 running=false
-target.style.display="none"
 clearInterval(t)
 
-setTimeout(()=>{
-alert("Tiempo terminado\nPuntos: "+score)
-},100)
+alert(
+"FIN\n\n"+
+"Puntos: "+score+"\n"+
+"Disparos: "+shots+"\n"+
+"Precisión: "+accEl.textContent
+)
 
 }
 
@@ -155,8 +221,9 @@ alert("Tiempo terminado\nPuntos: "+score)
 
 }
 
-spawnTarget()
-startTimer()
+for(let i=0;i<6;i++) spawnTarget()
+
+timer()
 
 </script>
 
