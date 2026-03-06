@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>FPS Target Shooter</title>
+<style>
+body{
+margin:0;
+overflow:hidden;
+background:#111;
+font-family:Arial;
+cursor:crosshair;
+}
+
+#hud{
+position:fixed;
+top:10px;
+left:10px;
+color:white;
+font-size:18px;
+z-index:10;
+}
+
+#game{
+position:absolute;
+width:100vw;
+height:100vh;
+}
+
+.target{
+position:absolute;
+width:60px;
+height:60px;
+border-radius:50%;
+background:radial-gradient(circle,#ff4d4d,#900);
+box-shadow:0 0 10px red;
+}
+
+#crosshair{
+position:fixed;
+top:50%;
+left:50%;
+width:20px;
+height:20px;
+margin-left:-10px;
+margin-top:-10px;
+pointer-events:none;
+}
+
+#crosshair::before,
+#crosshair::after{
+content:"";
+position:absolute;
+background:white;
+}
+
+#crosshair::before{
+left:9px;
+top:0;
+width:2px;
+height:20px;
+}
+
+#crosshair::after{
+top:9px;
+left:0;
+width:20px;
+height:2px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="hud">
+Puntos: <span id="score">0</span> |
+Tiempo: <span id="time">30</span>
+</div>
+
+<div id="game"></div>
+<div id="crosshair"></div>
+
+<script>
+
+const game = document.getElementById("game")
+const scoreEl = document.getElementById("score")
+const timeEl = document.getElementById("time")
+
+let score = 0
+let time = 30
+let targets = []
+
+const maxTargets = 6
+
+function spawnTarget(){
+
+if(targets.length >= maxTargets) return
+
+const target = document.createElement("div")
+target.className = "target"
+
+const x = Math.random()*(window.innerWidth-60)
+const y = Math.random()*(window.innerHeight-60)
+
+target.style.left = x+"px"
+target.style.top = y+"px"
+
+target.dataset.x = x
+target.dataset.y = y
+
+game.appendChild(target)
+targets.push(target)
+
+setTimeout(()=>{
+if(target.parentNode){
+target.remove()
+targets = targets.filter(t=>t!==target)
+}
+},2000)
+
+}
+
+function shoot(e){
+
+const mx = e.clientX
+const my = e.clientY
+
+for(let i=targets.length-1;i>=0;i--){
+
+const t = targets[i]
+const rect = t.getBoundingClientRect()
+
+if(
+mx >= rect.left &&
+mx <= rect.right &&
+my >= rect.top &&
+my <= rect.bottom
+){
+
+score++
+scoreEl.textContent = score
+
+t.remove()
+targets.splice(i,1)
+
+break
+}
+
+}
+
+}
+
+document.addEventListener("click",shoot)
+
+function gameLoop(){
+spawnTarget()
+}
+
+function timer(){
+
+time--
+timeEl.textContent = time
+
+if(time<=0){
+
+clearInterval(loop)
+clearInterval(clock)
+
+targets.forEach(t=>t.remove())
+
+alert("Fin del juego\nPuntuación: "+score)
+
+}
+
+}
+
+const loop = setInterval(gameLoop,600)
+const clock = setInterval(timer,1000)
+
+</script>
+
+</body>
+</html>
