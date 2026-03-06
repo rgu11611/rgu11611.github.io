@@ -3,50 +3,61 @@
 <head>
 <meta charset="UTF-8">
 <title>CSGO Aim Trainer</title>
+
 <style>
+
 body{
-    margin:0;
-    background:#111;
-    color:white;
-    font-family:Arial, sans-serif;
-    overflow:hidden;
+margin:0;
+background:#111;
+color:white;
+font-family:Arial;
+cursor:none;
+overflow:hidden;
 }
 
 #hud{
-    position:fixed;
-    top:10px;
-    left:10px;
-    font-size:18px;
+position:fixed;
+top:10px;
+left:10px;
+font-size:20px;
 }
 
 #target{
-    position:absolute;
-    width:60px;
-    height:60px;
-    border-radius:50%;
-    background:red;
-    display:none;
+position:absolute;
+width:60px;
+height:60px;
+border-radius:50%;
+background:red;
+display:none;
 }
 
 #crosshair{
-    position:fixed;
-    left:50%;
-    top:50%;
-    width:20px;
-    height:20px;
-    transform:translate(-50%,-50%);
-    pointer-events:none;
+position:fixed;
+width:20px;
+height:20px;
+pointer-events:none;
 }
 
 .line{
-    position:absolute;
-    background:white;
+position:absolute;
+background:white;
 }
 
-#v{ width:2px;height:20px;left:9px;}
-#h{ height:2px;width:20px;top:9px;}
+#v{
+width:2px;
+height:20px;
+left:9px;
+}
+
+#h{
+height:2px;
+width:20px;
+top:9px;
+}
+
 </style>
 </head>
+
 <body>
 
 <div id="hud">
@@ -65,77 +76,87 @@ Tiempo: <span id="time">30</span>
 
 let score = 0
 let time = 30
-let gameRunning = true
+let running = true
 
 const target = document.getElementById("target")
+const crosshair = document.getElementById("crosshair")
 const scoreEl = document.getElementById("score")
 const timeEl = document.getElementById("time")
 
+// mover mira con el mouse
+document.addEventListener("mousemove", e =>{
+
+crosshair.style.left = (e.clientX - 10) + "px"
+crosshair.style.top = (e.clientY - 10) + "px"
+
+})
+
 function spawnTarget(){
 
-    if(!gameRunning) return
+if(!running) return
 
-    const size = 40 + Math.random()*40
+const size = 40 + Math.random()*40
 
-    const x = Math.random()*(window.innerWidth-size)
-    const y = Math.random()*(window.innerHeight-size)
+const x = Math.random()*(window.innerWidth-size)
+const y = Math.random()*(window.innerHeight-size)
 
-    target.style.width = size+"px"
-    target.style.height = size+"px"
+target.style.width = size+"px"
+target.style.height = size+"px"
 
-    target.style.left = x+"px"
-    target.style.top = y+"px"
+target.style.left = x+"px"
+target.style.top = y+"px"
 
-    target.style.display = "block"
+target.style.display = "block"
+
 }
 
-target.addEventListener("click", e => {
+target.onclick = ()=>{
 
-    if(!gameRunning) return
+if(!running) return
 
-    score++
-    scoreEl.textContent = score
+score++
+scoreEl.textContent = score
 
-    target.style.display="none"
+target.style.display="none"
 
-    setTimeout(spawnTarget, 200)
+setTimeout(spawnTarget,200)
 
-})
+}
 
-document.body.addEventListener("click", e => {
+document.body.onclick = e =>{
 
-    if(e.target !== target){
-        score = Math.max(0, score-1)
-        scoreEl.textContent = score
-    }
+if(e.target !== target){
+score = Math.max(0, score-1)
+scoreEl.textContent = score
+}
 
-})
+}
 
-function timer(){
+function startTimer(){
 
-    const interval = setInterval(()=>{
+const t = setInterval(()=>{
 
-        time--
-        timeEl.textContent = time
+time--
+timeEl.textContent = time
 
-        if(time <= 0){
+if(time<=0){
 
-            clearInterval(interval)
-            gameRunning = false
-            target.style.display="none"
+running=false
+target.style.display="none"
+clearInterval(t)
 
-            setTimeout(()=>{
-                alert("Tiempo terminado\nPuntos: "+score)
-            },100)
+setTimeout(()=>{
+alert("Tiempo terminado\nPuntos: "+score)
+},100)
 
-        }
+}
 
-    },1000)
+},1000)
 
 }
 
 spawnTarget()
-timer()
+startTimer()
 
 </script>
 
