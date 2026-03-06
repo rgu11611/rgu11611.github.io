@@ -126,6 +126,7 @@ const shotsEl = document.getElementById("shots")
 const accEl = document.getElementById("accuracy")
 const timeEl = document.getElementById("time")
 const startScreen = document.getElementById("startScreen")
+const crosshair = document.getElementById("crosshair")
 
 let camX = 2000
 let camY = 2000
@@ -140,14 +141,19 @@ startScreen.addEventListener("click", () => {
 
 // Limitar movimiento del ratón al interior de la ventana
 document.addEventListener("mousemove", e => {
+  if (!running) return;
+
+  // Obtener la posición del ratón dentro de la ventana
   let newX = e.clientX
   let newY = e.clientY
 
+  // Mover la cámara
   camX += (newX - window.innerWidth / 2) * -0.1
   camY += (newY - window.innerHeight / 2) * -0.1
 
   world.style.transform = `translate(${-camX + window.innerWidth / 2}px, ${-camY + window.innerHeight / 2}px)`
 
+  // Limitar el cursor dentro de la ventana
   const minX = 0
   const maxX = window.innerWidth
   const minY = 0
@@ -157,6 +163,10 @@ document.addEventListener("mousemove", e => {
   if (newX > maxX) newX = maxX
   if (newY < minY) newY = minY
   if (newY > maxY) newY = maxY
+
+  // Mover la mira al centro del ratón
+  crosshair.style.left = (newX - 12) + "px"
+  crosshair.style.top = (newY - 12) + "px"
 })
 
 // Crear targets
