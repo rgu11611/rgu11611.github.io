@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>FPS Aim Trainer</title>
+<title>CSGO Aim Trainer</title>
 
 <style>
 body{margin:0;overflow:hidden;background:black;font-family:Arial}
@@ -67,7 +67,12 @@ const scoreEl=document.getElementById("score")
 const start=document.getElementById("start")
 
 let score=0
-let recoil=0
+
+const wall={
+z:10,
+width:6,
+height:4
+}
 
 const player={
 x:0,
@@ -78,6 +83,7 @@ pitch:0,
 speed:0.15
 }
 
+let recoil=0
 let keys={}
 
 document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true)
@@ -95,9 +101,6 @@ if(document.pointerLockElement===canvas){
 player.yaw += e.movementX*0.002
 player.pitch -= e.movementY*0.002
 
-player.pitch -= recoil
-recoil *= 0.85
-
 player.pitch=Math.max(-1.2,Math.min(1.2,player.pitch))
 
 }
@@ -111,23 +114,30 @@ this.reset()
 }
 
 reset(){
-this.x=(Math.random()-0.5)*6
-this.y=Math.random()*3+1
+
+this.x=(Math.random()-0.5)*wall.width
+this.y=Math.random()*wall.height
+
 this.vx=(Math.random()-0.5)*0.03
+this.vy=(Math.random()-0.5)*0.02
+
 }
 
 update(){
+
 this.x+=this.vx
-if(this.x>3||this.x<-3) this.vx*=-1
+this.y+=this.vy
+
+if(this.x>wall.width/2||this.x<-wall.width/2) this.vx*=-1
+if(this.y>wall.height||this.y<0) this.vy*=-1
+
 }
 
 draw(){
 
-const wallZ=10
-
 let dx=this.x-player.x
 let dy=this.y-player.y
-let dz=wallZ-player.z
+let dz=wall.z-player.z
 
 let cosY=Math.cos(player.yaw)
 let sinY=Math.sin(player.yaw)
@@ -148,22 +158,22 @@ let scale=600/z
 let sx=canvas.width/2 + x*scale
 let sy=canvas.height/2 - y*scale
 
-let r=30*scale/100
+let r=28*scale/100
 
 this.sx=sx
 this.sy=sy
 this.size=r
 
 let grad=ctx.createRadialGradient(
-sx-r*0.3,
-sy-r*0.3,
-r*0.1,
+sx-r*0.4,
+sy-r*0.4,
+r*0.2,
 sx,
 sy,
 r
 )
 
-grad.addColorStop(0,"#ffaaaa")
+grad.addColorStop(0,"#ffcccc")
 grad.addColorStop(1,"#aa0000")
 
 ctx.fillStyle=grad
@@ -181,7 +191,8 @@ for(let i=0;i<8;i++)targets.push(new Target())
 
 function shoot(){
 
-recoil+=0.02
+recoil+=0.04
+player.pitch+=recoil*0.5
 
 let cx=canvas.width/2
 let cy=canvas.height/2
@@ -231,13 +242,9 @@ player.z-=Math.sin(player.yaw)*player.speed
 
 function drawWall(){
 
-const wallZ=10
-const width=8
-const height=5
-
 let dx=-player.x
-let dy=0-player.y
-let dz=wallZ-player.z
+let dy=-player.y
+let dz=wall.z-player.z
 
 let cosY=Math.cos(player.yaw)
 let sinY=Math.sin(player.yaw)
@@ -258,30 +265,45 @@ let scale=600/z
 let sx=canvas.width/2 + x*scale
 let sy=canvas.height/2 - y*scale
 
+let w=wall.width*scale
+let h=wall.height*scale
+
 ctx.fillStyle="#444"
 
-ctx.fillRect(
-sx-width*scale/2,
-sy-height*scale/2,
-width*scale,
-height*scale
-)
+let r=30
+
+ctx.beginPath()
+ctx.moveTo(sx-w/2+r,sy-h/2)
+
+ctx.lineTo(sx+w/2-r,sy-h/2)
+ctx.quadraticCurveTo(sx+w/2,sy-h/2,sx+w/2,sy-h/2+r)
+
+ctx.lineTo(sx+w/2,sy+h/2-r)
+ctx.quadraticCurveTo(sx+w/2,sy+h/2,sx+w/2-r,sy+h/2)
+
+ctx.lineTo(sx-w/2+r,sy+h/2)
+ctx.quadraticCurveTo(sx-w/2,sy+h/2,sx-w/2,sy+h/2-r)
+
+ctx.lineTo(sx-w/2,sy-h/2+r)
+ctx.quadraticCurveTo(sx-w/2,sy-h/2,sx-w/2+r,sy-h/2)
+
+ctx.fill()
 
 }
 
-function drawGun(){
+function drawDeagle(){
 
-let w=220
-let h=120
+let baseX=canvas.width/2
+let baseY=canvas.height-80
 
-let x=canvas.width/2-w/2
-let y=canvas.height-h+20
+ctx.fillStyle="#2a2a2a"
+ctx.fillRect(baseX-40,baseY-20,80,25)
 
-ctx.fillStyle="#333"
-ctx.fillRect(x,y,w,h)
+ctx.fillStyle="#444"
+ctx.fillRect(baseX-20,baseY-60,40,40)
 
-ctx.fillStyle="#222"
-ctx.fillRect(x+90,y-40,40,40)
+ctx.fillStyle="#555"
+ctx.fillRect(baseX-10,baseY-90,20,30)
 
 }
 
@@ -299,7 +321,7 @@ t.update()
 t.draw()
 })
 
-drawGun()
+drawDeagle()
 
 requestAnimationFrame(loop)
 
