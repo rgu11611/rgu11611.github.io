@@ -2,14 +2,18 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>FPS Target Shooter</title>
+<title>Mini FPS Shooter</title>
+
 <style>
 body{
 margin:0;
 overflow:hidden;
-background:#111;
+background:black;
 font-family:Arial;
-cursor:crosshair;
+}
+
+canvas{
+display:block;
 }
 
 #hud{
@@ -18,22 +22,6 @@ top:10px;
 left:10px;
 color:white;
 font-size:18px;
-z-index:10;
-}
-
-#game{
-position:absolute;
-width:100vw;
-height:100vh;
-}
-
-.target{
-position:absolute;
-width:60px;
-height:60px;
-border-radius:50%;
-background:radial-gradient(circle,#ff4d4d,#900);
-box-shadow:0 0 10px red;
 }
 
 #crosshair{
@@ -56,16 +44,14 @@ background:white;
 
 #crosshair::before{
 left:9px;
-top:0;
 width:2px;
 height:20px;
 }
 
 #crosshair::after{
 top:9px;
-left:0;
-width:20px;
 height:2px;
+width:20px;
 }
 </style>
 </head>
@@ -73,109 +59,127 @@ height:2px;
 <body>
 
 <div id="hud">
-Puntos: <span id="score">0</span> |
-Tiempo: <span id="time">30</span>
+Puntos: <span id="score">0</span>
 </div>
 
-<div id="game"></div>
 <div id="crosshair"></div>
+<canvas id="game"></canvas>
 
 <script>
 
-const game = document.getElementById("game")
+const canvas = document.getElementById("game")
+const ctx = canvas.getContext("2d")
 const scoreEl = document.getElementById("score")
-const timeEl = document.getElementById("time")
+
+canvas.width = window.innerWidth
+canvas.height = window.innerHeight
 
 let score = 0
-let time = 30
+
+let camera = {
+x:0,
+y:0
+}
+
+let sensitivity = 0.002
+
 let targets = []
 
-const maxTargets = 6
+const targetCount = 10
 
-function spawnTarget(){
-
-if(targets.length >= maxTargets) return
-
-const target = document.createElement("div")
-target.className = "target"
-
-const x = Math.random()*(window.innerWidth-60)
-const y = Math.random()*(window.innerHeight-60)
-
-target.style.left = x+"px"
-target.style.top = y+"px"
-
-target.dataset.x = x
-target.dataset.y = y
-
-game.appendChild(target)
-targets.push(target)
-
-setTimeout(()=>{
-if(target.parentNode){
-target.remove()
-targets = targets.filter(t=>t!==target)
-}
-},2000)
-
+for(let i=0;i<targetCount;i++){
+targets.push({
+x:(Math.random()-0.5)*2000,
+y:(Math.random()-0.5)*2000,
+vx:(Math.random()-0.5)*2,
+vy:(Math.random()-0.5)*2
+})
 }
 
-function shoot(e){
+canvas.onclick = () => {
+canvas.requestPointerLock()
+}
 
-const mx = e.clientX
-const my = e.clientY
+document.addEventListener("mousemove",e=>{
+if(document.pointerLockElement === canvas){
+camera.x += e.movementX * sensitivity
+camera.y += e.movementY * sensitivity
+}
+})
 
-for(let i=targets.length-1;i>=0;i--){
+document.addEventListener("click",shoot)
 
-const t = targets[i]
-const rect = t.getBoundingClientRect()
+function shoot(){
 
-if(
-mx >= rect.left &&
-mx <= rect.right &&
-my >= rect.top &&
-my <= rect.bottom
-){
+const cx = canvas.width/2
+const cy = canvas.height/2
+
+targets.forEach((t,i)=>{
+
+let dx = t.screenX - cx
+let dy = t.screenY - cy
+
+if(Math.sqrt(dx*dx+dy*dy) < 20){
 
 score++
 scoreEl.textContent = score
 
-t.remove()
-targets.splice(i,1)
-
-break
+targets[i] = {
+x:(Math.random()-0.5)*2000,
+y:(Math.random()-0.5)*2000,
+vx:(Math.random()-0.5)*2,
+vy:(Math.random()-0.5)*2
 }
 
 }
 
-}
-
-document.addEventListener("click",shoot)
-
-function gameLoop(){
-spawnTarget()
-}
-
-function timer(){
-
-time--
-timeEl.textContent = time
-
-if(time<=0){
-
-clearInterval(loop)
-clearInterval(clock)
-
-targets.forEach(t=>t.remove())
-
-alert("Fin del juego\nPuntuación: "+score)
+})
 
 }
 
+function update(){
+
+targets.forEach(t=>{
+t.x += t.vx
+t.y += t.vy
+
+if(Math.abs(t.x)>2000) t.vx*=-1
+if(Math.abs(t.y)>2000) t.vy*=-1
+})
+
 }
 
-const loop = setInterval(gameLoop,600)
-const clock = setInterval(timer,1000)
+function draw(){
+
+ctx.fillStyle="black"
+ctx.fillRect(0,0,canvas.width,canvas.height)
+
+targets.forEach(t=>{
+
+let sx = canvas.width/2 + (t.x - camera.x*500)
+let sy = canvas.height/2 + (t.y - camera.y*500)
+
+t.screenX = sx
+t.screenY = sy
+
+ctx.beginPath()
+ctx.arc(sx,sy,15,0,Math.PI*2)
+ctx.fillStyle="red"
+ctx.fill()
+
+})
+
+}
+
+function loop(){
+
+update()
+draw()
+requestAnimationFrame(loop)
+
+}
+
+loop()
 
 </script>
 
