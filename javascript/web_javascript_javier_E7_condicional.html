@@ -1,0 +1,33 @@
+<html>
+<head>
+<title>Promedio de Calificaciones</title>
+</head>
+
+<body>
+
+<h2>Evaluación final del estudiante</h2>
+
+<script>
+
+var nota1;
+var nota2;
+var nota3;
+var promedio;
+
+nota1 = parseFloat(prompt("Introduce la nota del primer trimestre"));
+nota2 = parseFloat(prompt("Introduce la nota del segundo trimestre"));
+nota3 = parseFloat(prompt("Introduce la nota del tercer trimestre"));
+
+promedio = (nota1 + nota2 + nota3) / 3;
+
+if(promedio >= 4.5){
+    alert("El estudiante APRUEBA con un promedio de " + promedio);
+}
+else{
+    alert("El estudiante NO APRUEBA. Promedio: " + promedio);
+}
+
+</script>
+
+</body>
+</html>
