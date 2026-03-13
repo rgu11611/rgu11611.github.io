@@ -1,185 +1,77 @@
-<!DOCTYPE html>
-<html lang="es">
+<html>
+
+
 <head>
-<meta charset="UTF-8">
-<title>FPS Target Shooter</title>
-<style>
-body{
-margin:0;
-overflow:hidden;
-background:#111;
-font-family:Arial;
-cursor:crosshair;
-}
 
-#hud{
-position:fixed;
-top:10px;
-left:10px;
-color:white;
-font-size:18px;
-z-index:10;
-}
 
-#game{
-position:absolute;
-width:100vw;
-height:100vh;
-}
+<title>Promedio</title>
 
-.target{
-position:absolute;
-width:60px;
-height:60px;
-border-radius:50%;
-background:radial-gradient(circle,#ff4d4d,#900);
-box-shadow:0 0 10px red;
-}
-
-#crosshair{
-position:fixed;
-top:50%;
-left:50%;
-width:20px;
-height:20px;
-margin-left:-10px;
-margin-top:-10px;
-pointer-events:none;
-}
-
-#crosshair::before,
-#crosshair::after{
-content:"";
-position:absolute;
-background:white;
-}
-
-#crosshair::before{
-left:9px;
-top:0;
-width:2px;
-height:20px;
-}
-
-#crosshair::after{
-top:9px;
-left:0;
-width:20px;
-height:2px;
-}
-</style>
 </head>
 
 <body>
 
-<div id="hud">
-Puntos: <span id="score">0</span> |
-Tiempo: <span id="time">30</span>
-</div>
-
-<div id="game"></div>
-<div id="crosshair"></div>
-
 <script>
 
-const game = document.getElementById("game")
-const scoreEl = document.getElementById("score")
-const timeEl = document.getElementById("time")
 
-let score = 0
-let time = 30
-let targets = []
+//DEFINO VARIABLES//
 
-const maxTargets = 6
 
-function spawnTarget(){
+let numero_1;
 
-if(targets.length >= maxTargets) return
+let numero_2;
 
-const target = document.createElement("div")
-target.className = "target"
+let numero_3;
 
-const x = Math.random()*(window.innerWidth-60)
-const y = Math.random()*(window.innerHeight-60)
+let promedio;
 
-target.style.left = x+"px"
-target.style.top = y+"px"
 
-target.dataset.x = x
-target.dataset.y = y
 
-game.appendChild(target)
-targets.push(target)
 
-setTimeout(()=>{
-if(target.parentNode){
-target.remove()
-targets = targets.filter(t=>t!==target)
-}
-},2000)
+//PIDO VALORES AL USUSARIO//
 
-}
 
-function shoot(e){
+numero_1=prompt("Dame un número cualquiera");
 
-const mx = e.clientX
-const my = e.clientY
+numero_2=prompt("Dame otro número cualquiera");
 
-for(let i=targets.length-1;i>=0;i--){
+numero_3=prompt("Dame un último número cualquiera");
 
-const t = targets[i]
-const rect = t.getBoundingClientRect()
 
-if(
-mx >= rect.left &&
-mx <= rect.right &&
-my >= rect.top &&
-my <= rect.bottom
-){
 
-score++
-scoreEl.textContent = score
 
-t.remove()
-targets.splice(i,1)
 
-break
-}
+//COMBIERTO EN FLOAT//
 
-}
 
-}
+numero_1=parseFloat(numero_1);
 
-document.addEventListener("click",shoot)
+numero_2=parseFloat(numero_2);
 
-function gameLoop(){
-spawnTarget()
-}
+numero_3=parseFloat(numero_3);
 
-function timer(){
 
-time--
-timeEl.textContent = time
 
-if(time<=0){
 
-clearInterval(loop)
-clearInterval(clock)
 
-targets.forEach(t=>t.remove())
+//HAGO LA OPERACION QUE ME DA LA GANA//
 
-alert("Fin del juego\nPuntuación: "+score)
 
-}
+promedio=(numero_1 + numero_2 + numero_3)/3;
 
-}
 
-const loop = setInterval(gameLoop,600)
-const clock = setInterval(timer,1000)
+
+
+alert("El resultado del promedio es: " + promedio);
+
+
+document.write("<h1>El resultado de tu promedio es: " + promedio + "</h1>");
+
 
 </script>
 
 </body>
+
+
 </html>
 <body>
 
