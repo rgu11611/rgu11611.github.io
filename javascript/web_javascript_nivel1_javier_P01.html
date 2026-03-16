@@ -1,1 +1,80 @@
+<script>
 
+// BLOQUE 1 — Secuencia con alert()
+
+// Esta secuencia muestra pasos para preparar un sándwich
+
+/* Estas alertas deben tener sentido en orden.
+   El intérprete ejecuta de arriba abajo. */
+
+alert("Paso 1: Coger dos rebanadas de pan.");
+alert("Paso 2: Untar mantequilla o mayonesa.");
+alert("Paso 3: Colocar jamón y queso.");
+alert("Paso 4: Tapar con la otra rebanada y disfrutar.");
+
+// BLOQUE 2 — Consola: + con tipos
+
+// BLOQUE 2 — Consola: + con tipos
+let x = 16 + 4;
+console.log(x); // 20
+
+let x = "16" + "Blue";
+console.log(x); // "16Blue"
+
+let x = 16 + 4 + "Blue";
+console.log(x); // "20Blue"
+
+let x = "Blue" + 16 + 4;
+console.log(x); // "Blue164"
+
+// BLOQUE 3 — Consola: undefined y cambios de tipo
+
+// BLOQUE 3 — Consola: undefined y cambios de tipo
+let x;
+console.log(x); // undefined
+
+let x = 5;
+console.log(x); // 5
+
+let x = "Juan";
+console.log(x); // "Juan"
+
+// BLOQUE 4.1 — Prioridad aritmética
+
+let resultado_0 = 33 - 12 / 2;
+let resultado_1 = (33 - 12) / 2;
+let resultado_2 = 33 - 12 * 2;
+let resultado_3 = 33 - 12 ** 2;
+let resultado_4 = (33 - 12) ** 2;
+let resultado_5 = 33 - 12 * 2 ** 2;
+let resultado_6 = 33 - 12 / 2 ** 2;
+
+console.log("resultado_0 =", resultado_0); // 27
+console.log("resultado_1 =", resultado_1); // 10.5
+console.log("resultado_2 =", resultado_2); // 9
+console.log("resultado_3 =", resultado_3); // -111
+console.log("resultado_4 =", resultado_4); // 441
+console.log("resultado_5 =", resultado_5); // -15
+console.log("resultado_6 =", resultado_6); // 30
+
+// BLOQUE 4.2 — Comparación y lógicos
+
+let resultado_7 = 33 - 12 * 2 ** 2 >= 100; 
+let resultado_8 = 33 - 12 / 2 ** 2 >= 100; 
+let resultado_9 = 33 - 12 * 2 ** 2 < 3 && 2 < 33 - 12 / 2 ** 2;
+
+console.log("resultado_7 =", resultado_7); // false
+console.log("resultado_8 =", resultado_8); // false
+console.log("resultado_9 =", resultado_9); // false
+
+// SALIDA EN PÁGINA — document.write()
+
+let A = 10;
+let B = 20;
+
+document.write("<h2>Resultados lógicos</h2>");
+document.write("<p>A menor que B y B menor que A es:  → " + (A < B && B < A) + "</p>");
+document.write("<p>A menor que B o B menor que A es: " + ((A < B) || (B < A)) + "</p>");
+document.write("<p>Si negamos que A es menor que B entonces es: " + (!(A < B)) + "</p>");
+
+</script>
