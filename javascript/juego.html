@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Juego Dodge & Score</title>
+<style>
+body{
+    margin:0;
+    background:#111;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+}
+canvas{
+    background:#222;
+    display:block;
+    margin:auto;
+    border:3px solid #555;
+}
+#ui{
+    position:absolute;
+    width:100%;
+    top:10px;
+    font-size:20px;
+}
+#start{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    font-size:24px;
+}
+button{
+    padding:10px 20px;
+    font-size:18px;
+}
+</style>
+</head>
+<body>
+
+<div id="ui">Puntos: <span id="score">0</span></div>
+
+<div id="start">
+<h1>🎮 Dodge & Score</h1>
+<p>Mueve con ← → o A D</p>
+<button onclick="startGame()">Jugar</button>
+</div>
+
+<canvas id="game" width="600" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let player = {x:280,y:360,w:40,h:20,speed:6};
+let enemies=[];
+let keys={};
+let score=0;
+let gameOver=false;
+let spawnRate=100;
+let frame=0;
+
+document.addEventListener("keydown",e=>keys[e.key]=true);
+document.addEventListener("keyup",e=>keys[e.key]=false);
+
+function spawnEnemy(){
+    enemies.push({
+        x:Math.random()*560,
+        y:-20,
+        w:40,
+        h:20,
+        speed:2+Math.random()*2
+    });
+}
+
+function update(){
+
+if(gameOver) return;
+
+frame++;
+
+if(frame%spawnRate===0){
+spawnEnemy();
+if(spawnRate>30) spawnRate--;
+}
+
+if(keys["ArrowLeft"]||keys["a"]) player.x-=player.speed;
+if(keys["ArrowRight"]||keys["d"]) player.x+=player.speed;
+
+if(player.x<0) player.x=0;
+if(player.x>canvas.width-player.w) player.x=canvas.width-player.w;
+
+for(let e of enemies){
+e.y+=e.speed;
+
+if(
+player.x<e.x+e.w &&
+player.x+player.w>e.x &&
+player.y<e.y+e.h &&
+player.y+player.h>e.y
+){
+gameOver=true;
+document.getElementById("start").innerHTML=
+"<h1>💀 Game Over</h1><p>Puntos: "+score+"</p><button onclick='restart()'>Reintentar</button>";
+document.getElementById("start").style.display="block";
+}
+}
+
+enemies=enemies.filter(e=>e.y<canvas.height+20);
+
+score++;
+document.getElementById("score").textContent=score;
+}
+
+function draw(){
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+ctx.fillStyle="lime";
+ctx.fillRect(player.x,player.y,player.w,player.h);
+
+ctx.fillStyle="red";
+for(let e of enemies){
+ctx.fillRect(e.x,e.y,e.w,e.h);
+}
+
+}
+
+function loop(){
+update();
+draw();
+requestAnimationFrame(loop);
+}
+
+function startGame(){
+document.getElementById("start").style.display="none";
+}
+
+function restart(){
+player.x=280;
+enemies=[];
+score=0;
+spawnRate=100;
+frame=0;
+gameOver=false;
+document.getElementById("score").textContent=0;
+document.getElementById("start").style.display="none";
+}
+
+loop();
+</script>
+
+</body>
+</html>
