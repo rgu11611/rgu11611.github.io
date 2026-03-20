@@ -26,10 +26,14 @@
         document.body.appendChild(renderer.domElement);
 
         // Material para las paredes (color crema)
-        const creamMaterial = new THREE.MeshBasicMaterial({ color: 0xf5f5dc, side: THREE.DoubleSide });
+        const creamMaterial = new THREE.MeshStandardMaterial({ color: 0xf5f5dc, side: THREE.DoubleSide });
 
         // Material para los bordes (negro)
         const borderMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+
+        // Crear la luz para iluminar la escena
+        const light = new THREE.AmbientLight(0x404040, 2);  // Luz ambiental suave
+        scene.add(light);
 
         // Función para crear las paredes de la habitación con bordes negros
         function createWallWithBorder(width, height, x, y, z, rotationX = 0, rotationY = 0, rotationZ = 0) {
