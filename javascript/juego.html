@@ -1,154 +1,91 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Juego Dodge & Score</title>
-<style>
-body{
-    margin:0;
-    background:#111;
-    color:white;
-    font-family:Arial;
-    text-align:center;
-}
-canvas{
-    background:#222;
-    display:block;
-    margin:auto;
-    border:3px solid #555;
-}
-#ui{
-    position:absolute;
-    width:100%;
-    top:10px;
-    font-size:20px;
-}
-#start{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    font-size:24px;
-}
-button{
-    padding:10px 20px;
-    font-size:18px;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habitación Cúbica 3D con límites de movimiento</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
 </head>
 <body>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/FirstPersonControls.js"></script>
+    <script>
+        // Crear la escena
+        const scene = new THREE.Scene();
 
-<div id="ui">Puntos: <span id="score">0</span></div>
+        // Crear la cámara
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 10);  // Colocamos la cámara al fondo de la habitación
 
-<div id="start">
-<h1>🎮 Dodge & Score</h1>
-<p>Mueve con ← → o A D</p>
-<button onclick="startGame()">Jugar</button>
-</div>
+        // Crear el renderizador
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
-<canvas id="game" width="600" height="400"></canvas>
+        // Material para las paredes (color y un poco de transparencia)
+        const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
 
-<script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+        // Función para crear las paredes de la habitación
+        function createWall(width, height, x, y, z, rotationX = 0, rotationY = 0, rotationZ = 0) {
+            const geometry = new THREE.PlaneGeometry(width, height);
+            const wall = new THREE.Mesh(geometry, wallMaterial);
 
-let player = {x:280,y:360,w:40,h:20,speed:6};
-let enemies=[];
-let keys={};
-let score=0;
-let gameOver=false;
-let spawnRate=100;
-let frame=0;
+            // Posicionamos y rotamos la pared
+            wall.position.set(x, y, z);
+            wall.rotation.set(rotationX, rotationY, rotationZ);
 
-document.addEventListener("keydown",e=>keys[e.key]=true);
-document.addEventListener("keyup",e=>keys[e.key]=false);
+            scene.add(wall); // Añadir la pared a la escena
+        }
 
-function spawnEnemy(){
-    enemies.push({
-        x:Math.random()*560,
-        y:-20,
-        w:40,
-        h:20,
-        speed:2+Math.random()*2
-    });
-}
+        // Crear las paredes de la habitación (frente, atrás, izquierda, derecha, arriba, abajo)
+        createWall(20, 20, 0, 0, -10, 0, Math.PI, 0); // Pared de atrás
+        createWall(20, 20, 0, 0, 10, 0, 0, 0); // Pared de frente
+        createWall(20, 20, -10, 0, 0, 0, Math.PI / 2, 0); // Pared izquierda
+        createWall(20, 20, 10, 0, 0, 0, -Math.PI / 2, 0); // Pared derecha
+        createWall(20, 0.5, 0, 10, 0, Math.PI / 2, 0, 0); // Techo
+        createWall(20, 0.5, 0, -10, 0, -Math.PI / 2, 0, 0); // Piso
 
-function update(){
+        // Crear controles para el movimiento y rotación de la cámara
+        const controls = new THREE.FirstPersonControls(camera, renderer.domElement);
+        controls.lookSpeed = 0.1; // Velocidad de rotación de la cámara
+        controls.movementSpeed = 10; // Velocidad de movimiento
 
-if(gameOver) return;
+        // Limitar el movimiento de la cámara dentro de la mitad de la habitación
+        const LIMIT_X = 10;  // Límite en el eje X (mitad de la habitación)
+        const LIMIT_Z = 10;  // Límite en el eje Z (mitad de la habitación)
+        
+        function limitMovement() {
+            // Limitar el movimiento en el eje X (debe estar entre -LIMIT_X y LIMIT_X)
+            if (camera.position.x > LIMIT_X) camera.position.x = LIMIT_X;
+            if (camera.position.x < -LIMIT_X) camera.position.x = -LIMIT_X;
 
-frame++;
+            // Limitar el movimiento en el eje Z (debe estar entre -LIMIT_Z y LIMIT_Z)
+            if (camera.position.z > LIMIT_Z) camera.position.z = LIMIT_Z;
+            if (camera.position.z < 0) camera.position.z = 0;  // No permitir que se mueva hacia atrás del fondo
+        }
 
-if(frame%spawnRate===0){
-spawnEnemy();
-if(spawnRate>30) spawnRate--;
-}
+        // Función de animación
+        function animate() {
+            requestAnimationFrame(animate);
 
-if(keys["ArrowLeft"]||keys["a"]) player.x-=player.speed;
-if(keys["ArrowRight"]||keys["d"]) player.x+=player.speed;
+            // Actualizar los controles
+            controls.update(0.1);
 
-if(player.x<0) player.x=0;
-if(player.x>canvas.width-player.w) player.x=canvas.width-player.w;
+            // Llamamos a la función para limitar el movimiento
+            limitMovement();
 
-for(let e of enemies){
-e.y+=e.speed;
+            // Renderizamos la escena
+            renderer.render(scene, camera);
+        }
 
-if(
-player.x<e.x+e.w &&
-player.x+player.w>e.x &&
-player.y<e.y+e.h &&
-player.y+player.h>e.y
-){
-gameOver=true;
-document.getElementById("start").innerHTML=
-"<h1>💀 Game Over</h1><p>Puntos: "+score+"</p><button onclick='restart()'>Reintentar</button>";
-document.getElementById("start").style.display="block";
-}
-}
-
-enemies=enemies.filter(e=>e.y<canvas.height+20);
-
-score++;
-document.getElementById("score").textContent=score;
-}
-
-function draw(){
-
-ctx.clearRect(0,0,canvas.width,canvas.height);
-
-ctx.fillStyle="lime";
-ctx.fillRect(player.x,player.y,player.w,player.h);
-
-ctx.fillStyle="red";
-for(let e of enemies){
-ctx.fillRect(e.x,e.y,e.w,e.h);
-}
-
-}
-
-function loop(){
-update();
-draw();
-requestAnimationFrame(loop);
-}
-
-function startGame(){
-document.getElementById("start").style.display="none";
-}
-
-function restart(){
-player.x=280;
-enemies=[];
-score=0;
-spawnRate=100;
-frame=0;
-gameOver=false;
-document.getElementById("score").textContent=0;
-document.getElementById("start").style.display="none";
-}
-
-loop();
-</script>
+        // Llamamos a la animación
+        animate();
+    </script>
+</body>
+</html>
 
 </body>
 </html>
