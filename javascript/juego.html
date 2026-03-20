@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habitación Cúbica 3D con límites de movimiento</title>
+    <title>Habitación Cúbica 3D con control de ratón</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -11,14 +11,14 @@
 </head>
 <body>
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/FirstPersonControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/PointerLockControls.js"></script>
     <script>
         // Crear la escena
         const scene = new THREE.Scene();
 
         // Crear la cámara
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 2, 10);  // Colocamos la cámara al fondo de la habitación
+        camera.position.set(0, 2, 50);  // Colocamos la cámara a una distancia mayor para una habitación más grande
 
         // Crear el renderizador
         const renderer = new THREE.WebGLRenderer();
@@ -40,29 +40,32 @@
             scene.add(wall); // Añadir la pared a la escena
         }
 
-        // Crear las paredes de la habitación (frente, atrás, izquierda, derecha, arriba, abajo)
-        createWall(20, 20, 0, 0, -10, 0, Math.PI, 0); // Pared de atrás
-        createWall(20, 20, 0, 0, 10, 0, 0, 0); // Pared de frente
-        createWall(20, 20, -10, 0, 0, 0, Math.PI / 2, 0); // Pared izquierda
-        createWall(20, 20, 10, 0, 0, 0, -Math.PI / 2, 0); // Pared derecha
-        createWall(20, 0.5, 0, 10, 0, Math.PI / 2, 0, 0); // Techo
-        createWall(20, 0.5, 0, -10, 0, -Math.PI / 2, 0, 0); // Piso
+        // Aumentar el tamaño de la habitación
+        createWall(100, 100, 0, 0, -50, 0, Math.PI, 0); // Pared de atrás
+        createWall(100, 100, 0, 0, 50, 0, 0, 0); // Pared de frente
+        createWall(100, 100, -50, 0, 0, 0, Math.PI / 2, 0); // Pared izquierda
+        createWall(100, 100, 50, 0, 0, 0, -Math.PI / 2, 0); // Pared derecha
+        createWall(100, 1, 0, 50, 0, Math.PI / 2, 0, 0); // Techo
+        createWall(100, 1, 0, -50, 0, -Math.PI / 2, 0, 0); // Piso
 
-        // Crear controles para el movimiento y rotación de la cámara
-        const controls = new THREE.FirstPersonControls(camera, renderer.domElement);
-        controls.lookSpeed = 0.1; // Velocidad de rotación de la cámara
-        controls.movementSpeed = 10; // Velocidad de movimiento
+        // Crear controles para el movimiento y rotación de la cámara con el ratón
+        const controls = new THREE.PointerLockControls(camera, renderer.domElement);
 
-        // Limitar el movimiento de la cámara dentro de la mitad de la habitación
-        const LIMIT_X = 10;  // Límite en el eje X (mitad de la habitación)
-        const LIMIT_Z = 10;  // Límite en el eje Z (mitad de la habitación)
-        
+        // Hacer que al hacer clic se active el control de ratón (Pointer Lock)
+        document.body.addEventListener('click', () => {
+            controls.lock();
+        });
+
+        // Función para limitar el movimiento de la cámara dentro de la habitación
+        const LIMIT_X = 50;  // Límite en el eje X (mitad de la habitación)
+        const LIMIT_Z = 50;  // Límite en el eje Z (mitad de la habitación)
+
         function limitMovement() {
-            // Limitar el movimiento en el eje X (debe estar entre -LIMIT_X y LIMIT_X)
+            // Limitar el movimiento en el eje X
             if (camera.position.x > LIMIT_X) camera.position.x = LIMIT_X;
             if (camera.position.x < -LIMIT_X) camera.position.x = -LIMIT_X;
 
-            // Limitar el movimiento en el eje Z (debe estar entre -LIMIT_Z y LIMIT_Z)
+            // Limitar el movimiento en el eje Z
             if (camera.position.z > LIMIT_Z) camera.position.z = LIMIT_Z;
             if (camera.position.z < 0) camera.position.z = 0;  // No permitir que se mueva hacia atrás del fondo
         }
@@ -71,8 +74,8 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Actualizar los controles
-            controls.update(0.1);
+            // Actualizar los controles de la cámara (con la rotación del ratón)
+            controls.update();
 
             // Llamamos a la función para limitar el movimiento
             limitMovement();
@@ -84,8 +87,5 @@
         // Llamamos a la animación
         animate();
     </script>
-</body>
-</html>
-
 </body>
 </html>
