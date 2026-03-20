@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habitación Cúbica 3D con control de ratón</title>
+    <title>Habitación Cúbica 3D con color crema y bordes negros</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
@@ -25,28 +25,39 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Material para las paredes (color y un poco de transparencia)
-        const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+        // Material para las paredes (color crema)
+        const creamMaterial = new THREE.MeshBasicMaterial({ color: 0xf5f5dc, side: THREE.DoubleSide });
 
-        // Función para crear las paredes de la habitación
-        function createWall(width, height, x, y, z, rotationX = 0, rotationY = 0, rotationZ = 0) {
+        // Material para los bordes (negro)
+        const borderMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+
+        // Función para crear las paredes de la habitación con bordes negros
+        function createWallWithBorder(width, height, x, y, z, rotationX = 0, rotationY = 0, rotationZ = 0) {
+            // Crear la pared
             const geometry = new THREE.PlaneGeometry(width, height);
-            const wall = new THREE.Mesh(geometry, wallMaterial);
+            const wall = new THREE.Mesh(geometry, creamMaterial);
 
             // Posicionamos y rotamos la pared
             wall.position.set(x, y, z);
             wall.rotation.set(rotationX, rotationY, rotationZ);
 
             scene.add(wall); // Añadir la pared a la escena
+
+            // Crear el borde negro alrededor de la pared
+            const borderGeometry = new THREE.EdgesGeometry(geometry); // Creamos los bordes de la pared
+            const border = new THREE.LineSegments(borderGeometry, borderMaterial);
+            border.position.set(x, y, z); // Alineamos el borde con la pared
+            border.rotation.set(rotationX, rotationY, rotationZ); // Alineamos el borde con la pared
+            scene.add(border); // Añadir el borde a la escena
         }
 
-        // Aumentar el tamaño de la habitación
-        createWall(100, 100, 0, 0, -50, 0, Math.PI, 0); // Pared de atrás
-        createWall(100, 100, 0, 0, 50, 0, 0, 0); // Pared de frente
-        createWall(100, 100, -50, 0, 0, 0, Math.PI / 2, 0); // Pared izquierda
-        createWall(100, 100, 50, 0, 0, 0, -Math.PI / 2, 0); // Pared derecha
-        createWall(100, 1, 0, 50, 0, Math.PI / 2, 0, 0); // Techo
-        createWall(100, 1, 0, -50, 0, -Math.PI / 2, 0, 0); // Piso
+        // Crear las paredes de la habitación con bordes (aumentamos el tamaño de la habitación)
+        createWallWithBorder(100, 100, 0, 0, -50, 0, Math.PI, 0); // Pared de atrás
+        createWallWithBorder(100, 100, 0, 0, 50, 0, 0, 0); // Pared de frente
+        createWallWithBorder(100, 100, -50, 0, 0, 0, Math.PI / 2, 0); // Pared izquierda
+        createWallWithBorder(100, 100, 50, 0, 0, 0, -Math.PI / 2, 0); // Pared derecha
+        createWallWithBorder(100, 1, 0, 50, 0, Math.PI / 2, 0, 0); // Techo
+        createWallWithBorder(100, 1, 0, -50, 0, -Math.PI / 2, 0, 0); // Piso
 
         // Crear controles para el movimiento y rotación de la cámara con el ratón
         const controls = new THREE.PointerLockControls(camera, renderer.domElement);
